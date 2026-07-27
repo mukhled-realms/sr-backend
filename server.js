@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -34,8 +33,8 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(helmet());
 
 const limiter = rateLimit({
-    windowMs: 15 * 60 * 1000, // 15 دقيقة
-    max: 100, // 100 طلب كحد أقصى
+    windowMs: 15 * 60 * 1000,
+    max: 100,
     message: 'لقد تجاوزت الحد المسموح من الطلبات، حاول لاحقاً.'
 });
 app.use('/api/', limiter);
@@ -66,4 +65,3 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`🚀 Skull Realms Backend يعمل على المنفذ: ${PORT}`);
 });
-```
