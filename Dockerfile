@@ -1,16 +1,13 @@
-{
-  "name": "skull-realms-backend",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.18.2",
-    "jsonwebtoken": "^9.0.2",
-    "socket.io": "^4.7.2",
-    "sqlite3": "^5.1.6"
-  }
-}
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install --production
+
+COPY . .
+
+RUN mkdir -p /data
+
+EXPOSE ${PORT:-8080}
+
+CMD ["node", "server.js"]
