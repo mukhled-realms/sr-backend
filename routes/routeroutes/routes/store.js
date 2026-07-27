@@ -1,4 +1,3 @@
-```javascript
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const db = require('../db/index');
@@ -31,4 +30,3 @@ router.get('/me', require('../middleware/auth').authenticateToken, (req, res) =>
 });
 
 module.exports = router;
-```
