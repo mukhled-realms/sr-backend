@@ -9,15 +9,11 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: '*' } });
 
-const db = require('./db/index');
-const authRoutes = require('./routes/auth');
-const storeRoutes = require('./routes/store');
-const paymentRoutes = require('./routes/payment');
-const chatSocket = require('./sockets/chat');
-const auctionSocket = require('./sockets/auction');
-const { authenticateToken } = require('./middleware/auth');
-
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const compression = require('compression');
 const PORT = process.env.PORT || 8080;
+
 
 app.use(cors());
 app.use(express.json());
