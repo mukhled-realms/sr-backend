@@ -7,13 +7,12 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const PORT = process.env.PORT || 8080;
+const express = require('express');
+// ... باقي الأسطر ...
+const compression = require('compression'); // ينتهي عند السطر 14
 
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const compression = require('compression');
-const PORT = process.env.PORT || 8080;
-
+app.use(cors());
+// ... باقي السيرفر ...
 
 app.use(cors());
 app.use(express.json());
