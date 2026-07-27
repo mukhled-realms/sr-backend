@@ -30,4 +30,3 @@ router.get('/me', require('../middleware/auth').authenticateToken, (req, res) =>
 });
 
 module.exports = router;
-```
