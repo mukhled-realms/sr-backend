@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>Skull Realms — معاينة</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-0:#0a0a0d;
+    --bg-1:#111116;
+    --bone:#efe8da;
+    --bone-dim:#8d897e;
+    --toxic:#b6ff3d;
+    --ember:#ff4757;
+    --violet:#9b6bff;
+    --gold:#e0b23d;
+    --panel:#17171d;
+    --panel-line:#2a2a33;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 50% -10%, rgba(155,107,255,0.14), transparent 55%),
+      radial-gradient(ellipse at 85% 100%, rgba(182,255,61,0.08), transparent 45%),
+      var(--bg-0);
+    color:var(--bone);
+    font-family:'Cairo', sans-serif;
+    overflow:hidden;
+    height:100dvh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+  .stage{
+    width:100%;
+    max-width:460px;
+    height:100dvh;
+    max-height:940px;
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
+    border-inline:1px solid var(--panel-line);
+    overflow:hidden;
+  }
+
+  /* ---------- Top HUD ---------- */
+  .hud-top{
+    padding:14px 16px 10px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    z-index:5;
+  }
+  .brand{
+    display:flex; align-items:center; gap:8px;
+  }
+  .brand .mark{
+    width:26px;height:26px;
+    display:grid; place-items:center;
+    filter:drop-shadow(0 0 6px rgba(182,255,61,.5));
+    font-size:18px;
+  }
+  .brand .name{
+    font-family:'Teko',sans-serif;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:.5px;
+    color:var(--bone);
+  }
+  .live-pill{
+    display:flex; align-items:center; gap:5px;
+    background:rgba(255,71,87,0.12);
+    border:1px solid rgba(255,71,87,.4);
+    color:var(--ember);
+    font-size:11px;
+    font-weight:700;
+    padding:3px 9px 3px 7px;
+    border-radius:20px;
+  }
+  .live-pill .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--ember);
+    box-shadow:0 0 6px var(--ember);
+    animation:pulse 1.4s infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+  .diamond-pill{
+    display:flex; align-items:center; gap:6px;
+    background:rgba(155,107,255,.12);
+    border:1px solid rgba(155,107,255,.4);
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:700;
+    color:var(--violet);
+  }
+
+  /* ---------- Level / fever ---------- */
+  .progress-wrap{
+    padding:0 16px;
+    margin-top:2px;
+    z-index:5;
+  }
+  .progress-row{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:11px; color:var(--bone-dim); margin-bottom:5px;
+  }
+  .progress-row b{color:var(--toxic); font-weight:700;}
+  .fever-track{
+    height:9px; border-radius:6px;
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    overflow:hidden;
+    position:relative;
+  }
+  .fever-fill{
+    height:100%;
+    width:0%;
+    border-radius:6px;
+    background:linear-gradient(90deg, #6fae1a, var(--toxic));
+    box-shadow:0 0 10px rgba(182,255,61,.6);
+    transition:width .18s ease-out;
+  }
+  .fever-fill.hot{
+    background:linear-gradient(90deg, var(--ember), var(--gold), var(--toxic));
+    background-size:200% 100%;
+    animation:feverShift .6s linear infinite;
+  }
+  @keyframes feverShift{0%{background-position:0% 0}100%{background-position:200% 0}}
+
+  /* ---------- Live regional chat ---------- */
+  .chat-feed{
+    position:absolute;
+    left:12px; bottom:150px;
+    width:62%;
+    max-width:250px;
+    display:flex; flex-direction:column; gap:6px;
+    z-index:3;
+    pointer-events:none;
+    mask-image:linear-gradient(to top, black 60%, transparent 100%);
+  }
+  .chat-line{
+    font-size:11.5px;
+    line-height:1.5;
+    background:rgba(23,23,29,.72);
+    backdrop-filter:blur(2px);
+    border:1px solid rgba(255,255,255,.06);
+    padding:5px 9px;
+    border-radius:10px 10px 10px 2px;
+    max-width:100%;
+    animation:chatIn .25s ease-out;
+  }
+  .chat-line .u{color:var(--violet); font-weight:700;}
+  .chat-line .region{color:var(--bone-dim); font-size:10px;}
+  @keyframes chatIn{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:translateY(0)}}
+
+  /* ---------- Center arena ---------- */
+  .arena{
+    flex:1;
+    position:relative;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .ring{
+    position:absolute;
+    width:min(72vw,300px); height:min(72vw,300px);
+    border-radius:50%;
+    border:2px solid var(--panel-line);
+  }
+  .ring::before{
+    content:'';
+    position:absolute; inset:-2px;
+    border-radius:50%;
+    padding:2px;
+    background:conic-gradient(var(--toxic) calc(var(--pct,0) * 1%), transparent 0);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    transition:background .15s linear;
+  }
+  #skullBtn{
+    position:relative;
+    width:min(56vw,230px); height:min(56vw,230px);
+    border-radius:50%;
+    border:none;
+    background:radial-gradient(circle at 35% 30%, #24242c, #0d0d11 70%);
+    display:grid; place-items:center;
+    cursor:pointer;
+    box-shadow:
+      0 0 0 1px var(--panel-line),
+      0 20px 50px -15px rgba(155,107,255,.35),
+      inset 0 0 40px rgba(0,0,0,.6);
+    transition:transform .06s ease-out;
+    z-index:2;
+    -webkit-user-select:none; user-select:none;
+  }
+  #skullBtn:active{transform:scale(.94);}
+  #skullBtn .emoji{
+    font-size:min(26vw,110px);
+    filter:drop-shadow(0 0 18px rgba(182,255,61,.25));
+    transition:filter .15s;
+  }
+  #skullBtn.hot .emoji{filter:drop-shadow(0 0 28px rgba(255,71,87,.6));}
+
+  .score-display{
+    position:absolute;
+    top:14px; left:50%; transform:translateX(-50%);
+    text-align:center;
+    z-index:4;
+  }
+  .score-display .num{
+    font-family:'Teko', sans-serif;
+    font-size:56px;
+    font-weight:700;
+    line-height:1;
+    letter-spacing:1px;
+    color:var(--bone);
+    text-shadow:0 0 20px rgba(182,255,61,.25);
+  }
+  .score-display .lbl{
+    font-size:11px;
+    color:var(--bone-dim);
+    letter-spacing:2px;
+    margin-top:2px;
+  }
+  .mult-badge{
+    position:absolute;
+    bottom:12%;
+    left:50%; transform:translateX(-50%);
+    font-family:'Teko',sans-serif;
+    font-weight:600;
+    font-size:15px;
+    color:var(--gold);
+    background:rgba(224,178,61,.1);
+    border:1px solid rgba(224,178,61,.4);
+    padding:3px 14px;
+    border-radius:20px;
+    z-index:3;
+    opacity:0;
+    transition:opacity .2s;
+  }
+  .mult-badge.show{opacity:1;}
+
+  .floaters{
+    position:absolute; inset:0; pointer-events:none; z-index:6;
+  }
+  .floater{
+    position:absolute;
+    font-family:'Teko',sans-serif;
+    font-weight:700;
+    font-size:22px;
+    color:var(--toxic);
+    animation:floatUp .8s ease-out forwards;
+  }
+  @keyframes floatUp{
+    0%{opacity:1; transform:translateY(0) scale(1);}
+    100%{opacity:0; transform:translateY(-70px) scale(1.1);}
+  }
+
+  /* ---------- Bottom action rail ---------- */
+  .rail{
+    padding:10px 14px calc(14px + env(safe-area-inset-bottom));
+    display:flex;
+    gap:10px;
+    z-index:5;
+  }
+  .rail-btn{
+    flex:1;
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    padding:9px 6px;
+    color:var(--bone);
+    font-family:'Cairo';
+    font-size:11px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .rail-btn .ic{font-size:18px;}
+  .rail-btn.support{
+    background:linear-gradient(180deg, rgba(224,178,61,.16), rgba(224,178,61,.05));
+    border-color:rgba(224,178,61,.45);
+    color:var(--gold);
+  }
+
+  /* ---------- Modals ---------- */
+  .sheet-backdrop{
+    position:absolute; inset:0;
+    background:rgba(0,0,0,.55);
+    backdrop-filter:blur(2px);
+    display:flex; align-items:flex-end;
+    z-index:20;
+    opacity:0; pointer-events:none;
+    transition:opacity .2s;
+  }
+  .sheet-backdrop.open{opacity:1; pointer-events:auto;}
+  .sheet{
+    width:100%;
+    background:var(--bg-1);
+    border-top:1px solid var(--panel-line);
+    border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + env(safe-area-inset-bottom));
+    transform:translateY(100%);
+    transition:transform .25s cubic-bezier(.2,.8,.2,1);
+    max-height:80vh;
+    overflow-y:auto;
+  }
+  .sheet-backdrop.open .sheet{transform:translateY(0);}
+  .sheet-handle{
+    width:36px;height:4px;border-radius:3px;
+    background:var(--panel-line);
+    margin:0 auto 14px;
+  }
+  .sheet h3{
+    margin:0 0 4px; font-size:17px; font-weight:700;
+  }
+  .sheet p.sub{
+    margin:0 0 16px; font-size:12.5px; color:var(--bone-dim); line-height:1.6;
+  }
+
+  .store-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:10px;
+    margin-bottom:16px;
+  }
+  .store-item{
+    background:var(--panel);
+    border:1px solid var(--panel-line);
+    border-radius:14px;
+    padding:12px 10px;
+    text-align:center;
+  }
+  .store-item .icon{font-size:26px;}
+  .store-item .name{font-size:12px; font-weight:700; margin-top:4px;}
+  .store-item .price{
+    font-size:11px; color:var(--violet); margin-top:2px; font-weight:700;
+  }
+  .store-item .tag{
+    font-size:9.5px; color:var(--bone-dim); margin-top:2px;
+  }
+
+  .support-note{
+    background:rgba(224,178,61,.08);
+    border:1px dashed rgba(224,178,61,.4);
+    border-radius:12px;
+    padding:12px 14px;
+    font-size:12px;
+    line-height:1.8;
+    color:var(--bone);
+    margin-bottom:14px;
+  }
+  .support-note b{color:var(--gold);}
+
+  .toggle-row{
+    display:flex; align-items:center; justify-content:space-between;
+    padding:10px 2px;
+    border-top:1px solid var(--panel-line);
+    font-size:12.5px;
+  }
+  .switch{
+    width:38px; height:22px; border-radius:20px;
+    background:var(--panel-line);
+    position:relative;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .switch::after{
+    content:''; position:absolute; top:2px; right:2px;
+    width:18px; height:18px; border-radius:50%;
+    background:var(--bone-dim);
+    transition:all .2s;
+  }
+  .switch.on{background:rgba(182,255,61,.25);}
+  .switch.on::after{right:18px; background:var(--toxic);}
+
+  .close-x{
+    position:absolute; top:14px; left:14px;
+    width:28px;height:28px; border-radius:50%;
+    background:var(--panel); border:1px solid var(--panel-line);
+    display:grid; place-items:center;
+    color:var(--bone-dim);
+    cursor:pointer;
+    font-size:14px;
+  }
+
+  .primary-btn{
+    width:100%;
+    padding:13px;
+    border-radius:12px;
+    border:none;
+    background:linear-gradient(90deg, var(--gold), #f0d68a);
+    color:#1a1200;
+    font-family:'Cairo'; font-weight:700; font-size:13.5px;
+    cursor:pointer;
+  }
+  .primary-btn:disabled{
+    opacity:.55; cursor:not-allowed;
+    background:var(--panel-line); color:var(--bone-dim);
+  }
+
+  .thanks-toast{
+    position:absolute;
+    top:16px; left:50%; transform:translateX(-50%) translateY(-140%);
+    background:linear-gradient(135deg, rgba(182,255,61,.16), rgba(155,107,255,.12));
+    border:1px solid rgba(182,255,61,.4);
+    color:var(--bone);
+    padding:10px 16px;
+    border-radius:12px;
+    font-size:12.5px;
+    font-weight:600;
+    z-index:30;
+    transition:transform .3s cubic-bezier(.2,.8,.2,1);
+    text-align:center;
+    max-width:88%;
+  }
+  .thanks-toast.show{transform:translateX(-50%) translateY(0);}
+
+  ::-webkit-scrollbar{width:0;height:0;}
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- HUD -->
+  <div class="hud-top">
+    <div class="brand">
+      <span class="mark">💀</span>
+      <span class="name">SKULL REALMS</span>
+    </div>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <div class="diamond-pill">💎 <span id="diamondCount">120</span></div>
+      <div class="live-pill"><span class="dot"></span>LIVE</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap">
+    <div class="progress-row">
+      <span>المستوى <b id="levelNum">1</b></span>
+      <span id="feverLabel">الحماس: 0%</span>
+    </div>
+    <div class="fever-track">
+      <div class="fever-fill" id="feverFill"></div>
+    </div>
+  </div>
+
+  <!-- mock regional chat -->
+  <div class="chat-feed" id="chatFeed"></div>
+
+  <!-- arena -->
+  <div class="arena">
+    <div class="score-display">
+      <div class="num" id="scoreNum">0</div>
+      <div class="lbl">النقاط</div>
+    </div>
+
+    <div class="ring" id="ring" style="--pct:0"></div>
+    <button id="skullBtn" aria-label="اضغط على الجمجمة">
+      <span class="emoji">💀</span>
+    </button>
+    <div class="mult-badge" id="multBadge">x2 مضاعف!</div>
+
+    <div class="floaters" id="floaters"></div>
+  </div>
+
+  <!-- bottom rail -->
+  <div class="rail">
+    <div class="rail-btn" id="openChatInfo">
+      <span class="ic">💬</span>
+      <span>الدردشة</span>
+    </div>
+    <div class="rail-btn" id="openAuction">
+      <span class="ic">🔨</span>
+      <span>المزاد</span>
+    </div>
+    <div class="rail-btn" id="openStore">
+      <span class="ic">💎</span>
+      <span>المتجر</span>
+    </div>
+    <div class="rail-btn support" id="openSupport">
+      <span class="ic">🤍</span>
+      <span>دعم المطوّر</span>
+    </div>
+  </div>
+
+  <!-- store sheet -->
+  <div class="sheet-backdrop" id="storeSheet">
+    <div class="sheet">
+      <div class="close-x" data-close="storeSheet">✕</div>
+      <div class="sheet-handle"></div>
+      <h3>متجر الجواهر 💎</h3>
+      <p class="sub">هذه معاينة تصميم فقط — لا يوجد دفع حقيقي مفعّل الآن.</p>
+      <div class="store-grid">
+        <div class="store-item"><div class="icon">💎</div><div class="name">حزمة صغيرة</div><div class="price">50 جوهرة</div><div class="tag">معاينة فقط</div></div>
+        <div class="store-item"><div class="icon">💎💎</div><div class="name">حزمة متوسطة</div><div class="price">200 جوهرة</div><div class="tag">معاينة فقط</div></div>
+        <div class="store-item"><div class="icon">🎟️</div><div class="name">تذكرة حدث</div><div class="price">30 جوهرة</div><div class="tag">معاينة فقط</div></div>
+        <div class="store-item"><div class="icon">✨</div><div class="name">شكل تجميلي</div><div class="price">80 جوهرة</div><div class="tag">معاينة فقط</div></div>
+      </div>
+      <button class="primary-btn" disabled>الشراء غير مفعّل بعد</button>
+    </div>
+  </div>
+
+  <!-- auction sheet -->
+  <div class="sheet-backdrop" id="auctionSheet">
+    <div class="sheet">
+      <div class="close-x" data-close="auctionSheet">✕</div>
+      <div class="sheet-handle"></div>
+      <h3>المزاد المباشر 🔨</h3>
+      <p class="sub">عرض تجريبي لواجهة المزاد أثناء البث — بدون مزايدة حقيقية بعد.</p>
+      <div class="store-item" style="text-align:right; display:flex; align-items:center; gap:12px;">
+        <div class="icon" style="font-size:32px;">👑</div>
+        <div style="flex:1;">
+          <div class="name">تاج الأسطورة النادر</div>
+          <div class="tag">أعلى عرض حالياً: <span style="color:var(--gold); font-weight:700;">340 جوهرة</span></div>
+        </div>
+      </div>
+      <div style="height:12px;"></div>
+      <button class="primary-btn" disabled>المزايدة غير مفعّلة بعد</button>
+    </div>
+  </div>
+
+  <!-- support sheet -->
+  <div class="sheet-backdrop" id="supportSheet">
+    <div class="sheet">
+      <div class="close-x" data-close="supportSheet">✕</div>
+      <div class="sheet-handle"></div>
+      <h3>دعم المطوّر 🤍</h3>
+      <div class="support-note">
+        💛 دعمك اختياري ويساعد في تطوير <b>Skull Realms</b> (خوادم، أصوات، تحديثات).
+        <br><br>
+        هذه <b>نسخة معاينة</b> فقط — ربط الدفع الحقيقي غير مفعّل حالياً، وسيتم تفعيله لاحقاً من طرف المطوّر.
+      </div>
+      <button class="primary-btn" id="fakeSupportBtn">تجربة شكل الدعم (محاكاة فقط)</button>
+      <div class="toggle-row">
+        <span>لا تذكرني بالدعم</span>
+        <div class="switch" id="remindToggle"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- thanks toast -->
+  <div class="thanks-toast" id="thanksToast">شكراً يا أسطورة — هذه محاكاة فقط لواجهة الشكر 💛</div>
+
+</div>
+
+<script>
+(function(){
+  // ---------- state ----------
+  let score = 0, level = 1, fever = 0, diamonds = 120;
+  const scoreNum = document.getElementById('scoreNum');
+  const levelNum = document.getElementById('levelNum');
+  const feverFill = document.getElementById('feverFill');
+  const feverLabel = document.getElementById('feverLabel');
+  const ring = document.getElementById('ring');
+  const skullBtn = document.getElementById('skullBtn');
+  const multBadge = document.getElementById('multBadge');
+  const floaters = document.getElementById('floaters');
+  const diamondCount = document.getElementById('diamondCount');
+
+  // ---------- simple synthesized click sound (no external files) ----------
+  let audioCtx;
+  function beep(freq, dur, type, gain){
+    try{
+      audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = type || 'triangle';
+      o.frequency.value = freq;
+      g.gain.value = gain || 0.05;
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start();
+      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+      o.stop(audioCtx.currentTime + dur);
+    }catch(e){}
+  }
+
+  function spawnFloater(x, y, text, hot){
+    const el = document.createElement('div');
+    el.className = 'floater';
+    el.textContent = text;
+    el.style.left = x + 'px';
+    el.style.top = y + 'px';
+    if(hot) el.style.color = 'var(--ember)';
+    floaters.appendChild(el);
+    setTimeout(()=> el.remove(), 800);
+  }
+
+  let comboMult = 1;
+  let lastTapTime = 0;
+
+  skullBtn.addEventListener('click', (e)=>{
+    const now = Date.now();
+    const fast = (now - lastTapTime) < 350;
+    lastTapTime = now;
+    comboMult = fast ? Math.min(comboMult + 0.15, 4) : 1;
+
+    const gain = Math.round(1 * comboMult);
+    score += gain;
+    fever = Math.min(fever + 2.2, 100);
+    scoreNum.textContent = score.toLocaleString('en-US');
+
+    const hot = fever >= 80;
+    skullBtn.classList.toggle('hot', hot);
+    feverFill.classList.toggle('hot', hot);
+    feverFill.style.width = fever + '%';
+    feverLabel.textContent = 'الحماس: ' + Math.round(fever) + '%';
+    ring.style.setProperty('--pct', fever);
+
+    if(comboMult >= 1.8){
+      multBadge.textContent = 'x' + comboMult.toFixed(1) + ' مضاعف!';
+      multBadge.classList.add('show');
+      clearTimeout(window._mt);
+      window._mt = setTimeout(()=> multBadge.classList.remove('show'), 500);
+    }
+
+    const rect = skullBtn.getBoundingClientRect();
+    const stageRect = document.querySelector('.stage').getBoundingClientRect();
+    const x = (e.clientX || rect.left + rect.width/2) - stageRect.left + (Math.random()*30-15);
+    const y = (e.clientY || rect.top + rect.height/2) - stageRect.top - 10;
+    spawnFloater(x, y, '+' + gain, hot);
+
+    beep(hot ? 880 : 520, 0.07, 'triangle', 0.04);
+
+    if(fever >= 100){
+      fever = 0;
+      level += 1;
+      levelNum.textContent = level;
+      diamonds += 5;
+      diamondCount.textContent = diamonds;
+      beep(1200, 0.18, 'sine', 0.06);
+      feverFill.classList.remove('hot');
+      skullBtn.classList.remove('hot');
+    }
+  });
+
+  // ---------- mock regional live chat ----------
+  const names = ['ريم_٩٩','Faisal.KW','دانة🌙','Turki_QA','LunaAE','عبدالله٧','Sara.BH','Khalid_SA','نورة💫','OmarOM'];
+  const regions = ['السعودية','الإمارات','الكويت','قطر','البحرين','عُمان'];
+  const lines = ['يا سلام على السرعة 🔥','مين رقمه أعلى؟','هذا مستوى جديد!','خلونا نوصل للمزاد 👑','لعبة حلوة والله','fever عالي 😮‍💨','مين بيدخل المزاد؟'];
+  const chatFeed = document.getElementById('chatFeed');
+  function pushChat(){
+    const el = document.createElement('div');
+    el.className = 'chat-line';
+    const n = names[Math.floor(Math.
