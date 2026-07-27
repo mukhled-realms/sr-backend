@@ -6,6 +6,7 @@ const dbPath = process.env.DB_PATH || path.join(__dirname, '../skull.db');
 const db = new sqlite3.Database(dbPath);
 
 db.serialize(() => {
+  // جدول المستخدمين
   db.run(`
     CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -17,7 +18,18 @@ db.serialize(() => {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
-  console.log('✅ جدول المستخدمين جاهز');
+
+  // جدول المخزون (جديد)
+  db.run(`
+    CREATE TABLE IF NOT EXISTS inventory (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      item_name TEXT NOT NULL,
+      purchased_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES users(id)
+    )
+  `);
+  console.log('✅ جداول المستخدمين والمخزون جاهزة');
 });
 
 module.exports = db;
