@@ -7,7 +7,7 @@ require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: '*' } });
+const PORT = process.env.PORT || 8080;
 
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
