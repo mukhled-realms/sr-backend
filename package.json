@@ -1,5 +1,3 @@
-
-```json
 {
   "name": "skull-realms-backend",
   "version": "1.0.0",
@@ -16,4 +14,3 @@
     "sqlite3": "^5.1.6"
   }
 }
-```
