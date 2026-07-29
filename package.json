@@ -1,13 +1,28 @@
-{
-  "name": "skull-realms",
-  "version": "1.0.0",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2",
-    "cors": "^2.8.5"
-  }
-}
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const path = require('path');
+const cors = require('cors');
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: '*' } });
+
+const PORT = process.env.PORT || 3000;
+
+app.use(cors());
+app.use(express.static(path.join(__dirname, 'public')));
+
+io.on('connection', (socket) => {
+  console.log('🟢 لاعب متصل:', socket.id);
+  socket.on('chat_message', (msg) => {
+    io.emit('chat_message', msg);
+  });
+  socket.on('disconnect', () => {
+    console.log('🔴 لاعب انقطع:', socket.id);
+  });
+});
+
+server.listen(PORT, () => {
+  console.log(`🚀 Skull Realms يعمل على المنفذ: ${PORT}`);
+});
