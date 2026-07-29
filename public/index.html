@@ -1,198 +1,431 @@
-<!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<!doctype html>
+<html lang="ar">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>Skull Realms — النسخة الذهبية</title>
-    <script src="/socket.io/socket.io.js"></script>
-    <style>
-        :root { --bg: #0d0d11; --panel: #1a1a22; --gold: #e0b23d; --toxic: #b6ff3d; --ember: #ff4757; --violet: #9b6bff; }
-        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
-        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Cairo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
-        .stage { width: 100%; max-width: 450px; height: 100vh; display: flex; flex-direction: column; border: 1px solid #222; background: #0f0f14; position: relative; }
-        
-        /* HUD */
-        .hud { display: flex; justify-content: space-between; padding: 15px; font-weight: 700; border-bottom: 1px solid #222; }
-        .hud .title { font-size: 20px; letter-spacing: 1px; }
-        .diamond-pill { background: rgba(155,107,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 14px; }
-        
-        /* Arena */
-        .arena { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
-        #skullBtn { width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2a34, #0d0d11); border: 2px solid #333; display: grid; place-items: center; font-size: 80px; cursor: pointer; transition: transform 0.05s; box-shadow: 0 0 0 1px #333; }
-        #skullBtn:active { transform: scale(0.94); }
-        .score { font-size: 48px; font-family: 'Teko', sans-serif; margin-bottom: 10px; text-shadow: 0 0 15px rgba(182, 255, 61, 0.2); }
-        .level-label { font-size: 14px; color: #888; }
-        
-        /* Rail */
-        .rail { display: flex; gap: 10px; padding: 15px; background: var(--panel); border-top: 1px solid #222; }
-        .rail-btn { flex: 1; padding: 10px; text-align: center; background: #222; border-radius: 10px; cursor: pointer; font-size: 14px; transition: 0.2s; }
-        .rail-btn:active { transform: scale(0.95); }
-        
-        /* Chat Feed */
-        .chat-feed { position: absolute; left: 10px; bottom: 80px; width: 200px; max-height: 300px; overflow-y: auto; pointer-events: none; mask-image: linear-gradient(to top, black 70%, transparent 100%); }
-        .chat-msg { background: rgba(0,0,0,0.7); padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; border-left: 3px solid var(--toxic); animation: fadeUp 0.3s; }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Fever Ring */
-        .ring { position: absolute; width: 280px; height: 280px; border-radius: 50%; border: 2px solid #333; pointer-events: none; }
-        .ring::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; padding: 2px; background: conic-gradient(var(--toxic) calc(var(--pct,0) * 1%), transparent 0); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; transition: background 0.1s; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Skull Realms — Cyberpunk Neon | النسخة الذهبية</title>
+  <style>
+    :root{
+      --bg1:#05030a; --bg2:#0b0520; --neon1:#8b5cf6; --neon2:#00e6ff; --glass: rgba(255,255,255,0.03);
+      --muted:#9aa0a6; --panel:#0f0b16; --accent:#ff4d94;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;font-family:Inter,system-ui,Segoe UI,Arial;direction:rtl;background:
+      radial-gradient(1200px 600px at 10% 10%, rgba(139,92,246,0.06), transparent),
+      linear-gradient(180deg,var(--bg1),var(--bg2));color:#e6eef8}
+    .wrap{max-width:1200px;margin:20px auto;padding:18px;display:grid;grid-template-columns:1fr 360px;gap:18px}
+    .panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);border-radius:14px;padding:14px;box-shadow:0 12px 40px rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.02)}
+    header{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+    .brand{display:flex;align-items:center;gap:12px}
+    .skull{font-size:30px;filter:drop-shadow(0 6px 18px rgba(139,92,246,0.25))}
+    .title{font-weight:800;letter-spacing:0.6px}
+    .subtitle{font-size:13px;color:var(--muted)}
+    .controls{display:flex;gap:8px;align-items:center}
+    .btn{background:linear-gradient(90deg,var(--neon1),var(--neon2));color:#071022;padding:8px 12px;border-radius:10px;border:none;cursor:pointer;font-weight:700;box-shadow:0 6px 18px rgba(139,92,246,0.12)}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.04);color:var(--muted);box-shadow:none}
+    .hud{display:flex;gap:12px;align-items:center}
+    .stat{background:linear-gradient(90deg, rgba(255,255,255,0.02), transparent);padding:8px 12px;border-radius:10px;font-weight:700}
+    .game-area{height:460px;border-radius:12px;background:
+      linear-gradient(180deg, rgba(255,255,255,0.01), transparent);
+      display:flex;align-items:center;justify-content:center;flex-direction:column;position:relative;overflow:hidden}
+    .click-target{width:260px;height:260px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:64px;cursor:pointer;
+      background:radial-gradient(circle at 30% 30%, rgba(139,92,246,0.18), rgba(0,230,255,0.06));border:1px solid rgba(255,255,255,0.03);box-shadow:0 12px 40px rgba(0,0,0,0.6)}
+    .gems{display:flex;gap:8px;margin-top:12px}
+    .gem{padding:6px 10px;border-radius:8px;background:linear-gradient(90deg,#0f0b16,rgba(255,255,255,0.02));font-weight:700}
+    .sheet{position:fixed;right:24px;bottom:24px;width:380px;background:linear-gradient(180deg, rgba(10,6,20,0.95), rgba(5,3,10,0.95));border-radius:12px;padding:12px;box-shadow:0 18px 60px rgba(0,0,0,0.7);z-index:999;border:1px solid rgba(139,92,246,0.12)}
+    .sheet.hidden{display:none}
+    #chatMessages{height:260px;overflow:auto;padding:10px;background:linear-gradient(180deg, rgba(255,255,255,0.01), transparent);border-radius:8px;margin-bottom:8px}
+    .msg{margin-bottom:8px;padding:8px;border-radius:8px;max-width:80%}
+    .msg.me{background:linear-gradient(90deg,var(--neon1),var(--neon2));color:#071022;margin-left:auto}
+    .msg.other{background:rgba(255,255,255,0.02);color:var(--muted);margin-right:auto}
+    .system{background:linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));color:var(--muted);text-align:center;padding:6px;border-radius:8px}
+    .store-item{display:flex;align-items:center;justify-content:space-between;padding:10px;border-radius:10px;background:linear-gradient(90deg, rgba(255,255,255,0.01), transparent);margin-bottom:8px}
+    .price{font-weight:800;color:var(--neon2)}
+    .admin-sheet{position:fixed;left:24px;bottom:24px;width:420px;background:linear-gradient(180deg,#071022,#0b0716);border-radius:12px;padding:12px;box-shadow:0 18px 60px rgba(0,0,0,0.7);z-index:999;border:1px solid rgba(0,230,255,0.06)}
+    .admin-sheet.hidden{display:none}
+    input,select,textarea{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:8px;color:inherit}
+    .small{font-size:13px;color:var(--muted)}
+    footer{margin-top:12px;text-align:center;color:var(--muted);font-size:13px}
+
+    /* شاشة التحميل */
+    #loadingScreen{
+      position:fixed; inset:0;
+      background:radial-gradient(circle at 30% 30%, rgba(139,92,246,0.18), rgba(0,230,255,0.06)), linear-gradient(180deg,#05030a,#0b0520);
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      z-index:9999; color:#e6eef8; font-family:Inter,system-ui;
+      transition:opacity 0.8s ease-out;
+    }
+    #loadingScreen .skull{font-size:64px;filter:drop-shadow(0 0 18px #8b5cf6)}
+    #loadingScreen .lbl{font-size:22px;font-weight:700;letter-spacing:1px}
+    #loadingScreen .bar{width:220px;height:6px;background:rgba(255,255,255,0.06);border-radius:6px;overflow:hidden;margin-top:24px}
+    #loadingScreen .fill{width:0%;height:100%;background:linear-gradient(90deg,#8b5cf6,#00e6ff);box-shadow:0 0 12px #8b5cf6;transition:width 0.4s ease-out}
+    #loadingScreen .tip{margin-top:18px;font-size:14px;color:#9aa0a6}
+  </style>
 </head>
 <body>
-<div class="stage">
-    <div class="hud">
-        <div class="title">💀 SKULL REALMS</div>
-        <div class="diamond-pill">💎 <span id="diamonds">0</span></div>
-    </div>
-    <div class="arena">
-        <div class="ring" id="ring" style="--pct:0;"></div>
-        <div class="score" id="score">0</div>
-        <div class="level-label">المستوى <span id="level">1</span></div>
-        <button id="skullBtn">💀</button>
-        <div class="chat-feed" id="chatFeed"></div>
-    </div>
-    <div class="rail">
-        <div class="rail-btn" id="chatBtn">💬 الشات</div>
-        <div class="rail-btn" id="storeBtn">💎 المتجر</div>
-        <div class="rail-btn" id="supportBtn">🤍 الدعم</div>
-    </div>
-</div>
 
-<script>
-    // ==========================================
-    // الاتصال بالسيرفر
-    // ==========================================
-    const socket = io();
+  <!-- شاشة التحميل -->
+  <div id="loadingScreen">
+    <div class="skull">💀</div>
+    <div class="lbl">Skull Realms Loading...</div>
+    <div class="bar"><div class="fill" id="loadingBar"></div></div>
+    <div class="tip" id="loadingTip">جاري تحميل الأنظمة…</div>
+  </div>
 
-    // ==========================================
-    // نظام النقاط والمستويات والحماس
-    // ==========================================
-    let score = parseInt(localStorage.getItem('skull_score')) || 0;
-    let level = parseInt(localStorage.getItem('skull_level')) || 1;
-    let diamonds = parseInt(localStorage.getItem('skull_diamonds')) || 0;
-    let fever = 0;
-    let comboCount = 0;
-    let lastTapTime = 0;
+  <div class="wrap">
+    <main class="panel">
+      <header>
+        <div class="brand">
+          <div class="skull">💀</div>
+          <div>
+            <div class="title">Skull Realms</div>
+            <div class="subtitle">Cyberpunk Neon — النسخة الذهبية للبث</div>
+          </div>
+        </div>
 
-    const scoreEl = document.getElementById('score');
+        <div class="controls">
+          <div class="hud">
+            <div class="stat">نقاط: <span id="points">0</span></div>
+            <div class="stat">جواهر: <span id="gems">0</span></div>
+            <div class="stat">x النقر: <span id="mult">1</span></div>
+          </div>
+          <button class="btn" id="openChatBtn">💬 شات</button>
+          <button class="btn" id="supportBtn">💸 ادعمنا</button>
+          <button class="btn ghost" id="openAdminBtn">🔐 أدمن</button>
+        </div>
+      </header>
+
+      <section class="game-area">
+        <div id="clickTarget" class="click-target" title="اضغط بسرعة">💀</div>
+        <div class="gems">
+          <div class="gem">مستوى: <span id="level">1</span></div>
+          <div class="gem">نقاط اليوم: <span id="daily">0</span></div>
+          <div class="gem">أفضل نتيجة: <span id="best">0</span></div>
+        </div>
+
+        <div style="position:absolute;left:18px;top:18px" class="small">رابط البث: <span id="streamLink">—</span></div>
+        <div style="position:absolute;right:18px;top:18px" class="small">لاعبون: <span id="playersCount">0</span></div>
+      </section>
+
+      <section style="margin-top:12px">
+        <h3 style="margin:0 0 8px 0">المتجر</h3>
+
+        <div class="store-item">
+          <div>
+            <div style="font-weight:700">حزمة نقاط صغيرة</div>
+            <div class="small">+100 نقاط</div>
+          </div>
+          <div class="price" id="paypal-button-100"></div>
+        </div>
+
+        <div class="store-item">
+          <div>
+            <div style="font-weight:700">حزمة نقاط متوسطة</div>
+            <div class="small">+500 نقاط</div>
+          </div>
+          <div class="price" id="paypal-button-500"></div>
+        </div>
+
+        <div class="store-item">
+          <div>
+            <div style="font-weight:700">حزمة نقاط كبيرة</div>
+            <div class="small">+1200 نقاط</div>
+          </div>
+          <div class="price" id="paypal-button-1200"></div>
+        </div>
+      </section>
+
+      <footer class="small">جاهز للبث • تأكد من استبدال PayPal Client ID قبل الرفع</footer>
+    </main>
+
+    <aside class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div>
+          <div style="font-weight:800">لوحة سريعة</div>
+          <div class="small">تحكم ومراقبة</div>
+        </div>
+        <div style="font-size:22px">⚡</div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <button class="rail-btn" id="openChatRail">💬 افتح الشات</button>
+        <button class="rail-btn" id="openStoreRail">🛒 افتح المتجر</button>
+        <button class="rail-btn" id="openSupportRail">💸 ادعمنا</button>
+        <button class="rail-btn" id="openAdminRail">🔐 مدخل الأدمن</button>
+      </div>
+
+      <div style="margin-top:12px">
+        <h4 style="margin:6px 0">إحصائيات</h4>
+        <div class="small">لاعبون متصلون: <span id="playersCountSide">0</span></div>
+        <div class="small">إجمالي الدعم: <span id="totalSupport">0 SAR</span></div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Chat sheet -->
+  <div class="sheet hidden" id="chatSheet" aria-hidden="true">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">الشات</h3>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="small" id="chatStatus">غير متصل</div>
+        <button onclick="closeChat()" style="background:transparent;border:none;color:#aaa;cursor:pointer">إغلاق</button>
+      </div>
+    </div>
+    <div id="chatMessages"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input id="chatInput" type="text" placeholder="اكتب رسالة..." />
+      <button id="chatSend" class="btn">إرسال</button>
+    </div>
+  </div>
+
+  <!-- Admin sheet -->
+  <div class="admin-sheet hidden" id="adminSheet" aria-hidden="true">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <h3 style="margin:0">مدخل الأدمن</h3>
+      <button onclick="closeAdmin()" style="background:transparent;border:none;color:#aaa;cursor:pointer">إغلاق</button>
+    </div>
+
+    <div id="adminLogin">
+      <div class="small">أدخل كلمة السر السرية</div>
+      <input id="adminPass" type="password" placeholder="كلمة السر" style="width:100%;margin-top:8px" />
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="adminEnter" class="btn">دخول</button>
+        <button onclick="closeAdmin()" class="btn ghost">إلغاء</button>
+      </div>
+    </div>
+
+    <div id="adminPanel" style="display:none;margin-top:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div style="font-weight:700">أدوات الأدمن</div>
+        <div class="small">وضع الأدمن مفعل</div>
+      </div>
+
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button id="kickBtn" class="btn ghost" style="flex:1">طرد لاعب</button>
+        <button id="broadcastBtn" class="btn" style="flex:1">إرسال رسالة عامة</button>
+      </div>
+
+      <div style="margin-top:8px">
+        <div class="small">إرسال رسالة عامة</div>
+        <input id="broadcastInput" placeholder="نص الرسالة..." style="width:100%;margin-top:6px" />
+        <div style="display:flex;gap:8px;margin-top:8px">
+          <button id="sendBroadcast" class="btn">إرسال</button>
+          <button id="closeAdminPanel" class="btn ghost">خروج</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sounds -->
+  <audio id="notifSound"><source src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg" type="audio/ogg"></audio>
+  <audio id="coinSound"><source src="https://actions.google.com/sounds/v1/cartoon/clangandwobble.ogg" type="audio/ogg"></audio>
+  <audio id="clickSound"><source src="https://actions.google.com/sounds/v1/alarms/digitalwatchalarm_long.ogg" type="audio/ogg"></audio>
+
+  <!-- Socket.io -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+
+  <!-- PayPal SDK -->
+  <script src="https://www.paypal.com/sdk/js?client-id=AS65-potqLVddAoTcwZjcaDGjJq-gm46HqJAUzDuuf2Z5ntV2RUso6-CMDqo4x8fyrCrBXTO9g7JhhCL&currency=SAR"></script>
+
+  <script>
+    // النسخة الذهبية — Cyberpunk Neon
+    // يحتوي على شاشة تحميل، شات، متجر PayPal، نقاط، نقر مزدوج x3، أصوات، مدخل أدمن، وتخزين محلي.
+
+    // عناصر DOM
+    const pointsEl = document.getElementById('points');
+    const gemsEl = document.getElementById('gems');
+    const multEl = document.getElementById('mult');
     const levelEl = document.getElementById('level');
-    const ring = document.getElementById('ring');
-    const diamondsEl = document.getElementById('diamonds');
-    const skullBtn = document.getElementById('skullBtn');
-    const chatFeed = document.getElementById('chatFeed');
+    const dailyEl = document.getElementById('daily');
+    const bestEl = document.getElementById('best');
+    const clickTarget = document.getElementById('clickTarget');
+    const streamLinkEl = document.getElementById('streamLink');
+    const playersCountEl = document.getElementById('playersCount');
+    const playersCountSide = document.getElementById('playersCountSide');
+    const totalSupportEl = document.getElementById('totalSupport');
 
-    // تحديث الواجهة عند البدء
-    scoreEl.textContent = score;
-    levelEl.textContent = level;
-    diamondsEl.textContent = diamonds;
+    // Chat
+    const chatSheet = document.getElementById('chatSheet');
+    const chatMessages = document.getElementById('chatMessages');
+    const chatInput = document.getElementById('chatInput');
+    const chatSend = document.getElementById('chatSend');
+    const chatStatus = document.getElementById('chatStatus');
 
-    // ==========================================
-    // نظام الصوت (المحسن)
-    // ==========================================
-    let audioCtx;
-    function beep(freq, dur, type, gain) {
-        try {
-            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const o = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            o.type = type || 'triangle';
-            o.frequency.value = freq;
-            g.gain.value = gain || 0.05;
-            o.connect(g); g.connect(audioCtx.destination);
-            o.start();
-            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-            o.stop(audioCtx.currentTime + dur);
-        } catch (e) {}
+    // Admin
+    const adminSheet = document.getElementById('adminSheet');
+    const adminLogin = document.getElementById('adminLogin');
+    const adminPanel = document.getElementById('adminPanel');
+    const adminPass = document.getElementById('adminPass');
+    const adminEnter = document.getElementById('adminEnter');
+
+    // Sounds
+    const notifSound = document.getElementById('notifSound');
+    const coinSound = document.getElementById('coinSound');
+    const clickSound = document.getElementById('clickSound');
+
+    // Local storage keys
+    const LSPOINTS = 'skpointsv1';
+    const LSGEMS = 'skgemsv1';
+    const LSBEST = 'skbestv1';
+    const LSLEVEL = 'sklevelv1';
+    const LSDAILY = 'skdailyv1';
+    const LSMULT = 'skmultv1';
+
+    // Default state
+    let state = {
+      points: 0,
+      gems: 0,
+      best: 0,
+      level: 1,
+      daily: 0,
+      mult: 1
+    };
+
+    // Load from localStorage
+    function loadState(){
+      try{
+        const p = parseInt(localStorage.getItem(LSPOINTS)) || 0;
+        const g = parseInt(localStorage.getItem(LSGEMS)) || 0;
+        const b = parseInt(localStorage.getItem(LSBEST)) || 0;
+        const l = parseInt(localStorage.getItem(LSLEVEL)) || 1;
+        const d = parseInt(localStorage.getItem(LSDAILY)) || 0;
+        const m = parseInt(localStorage.getItem(LSMULT)) || 1;
+        state = {points:p,gems:g,best:b,level:l,daily:d,mult:m};
+      }catch(e){}
+      renderState();
+    }
+    function saveState(){
+      localStorage.setItem(LSPOINTS, state.points);
+      localStorage.setItem(LSGEMS, state.gems);
+      localStorage.setItem(LSBEST, state.best);
+      localStorage.setItem(LSLEVEL, state.level);
+      localStorage.setItem(LSDAILY, state.daily);
+      localStorage.setItem(LSMULT, state.mult);
+    }
+    function renderState(){
+      pointsEl.textContent = state.points;
+      gemsEl.textContent = state.gems;
+      bestEl.textContent = state.best;
+      levelEl.textContent = state.level;
+      dailyEl.textContent = state.daily;
+      multEl.textContent = state.mult + 'x';
     }
 
-    // ==========================================
-    // الضربة الرئيسية (مع النقر المزدوج والمضاعف)
-    // ==========================================
-    skullBtn.addEventListener('click', (e) => {
-        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
-        const now = Date.now();
-        const isDoubleTap = (now - lastTapTime) < 250; // نقرتان سريعتان = x3
-        lastTapTime = now;
-        
-        const multiplier = isDoubleTap ? 3 : 1;
-        const gain = Math.round(1 * multiplier);
-        
-        score += gain;
-        fever = Math.min(fever + (isDoubleTap ? 6 : 2), 100);
-        
-        // حفظ التقدم
-        localStorage.setItem('skull_score', score);
-        scoreEl.textContent = score;
-        
-        // تحديث حلقة الحماس
-        ring.style.setProperty('--pct', fever);
-        document.querySelector('.level-label').textContent = `المستوى ${level}`;
+    // Click logic with double-click x3
+    let lastClick = 0;
+    let clickChain = 0;
+    clickTarget.addEventListener('click', ()=>{
+      const now = Date.now();
+      if(now - lastClick < 400){
+        clickChain++;
+      } else {
+        clickChain = 1;
+      }
+      lastClick = now;
 
-        // الصوت
-        beep(isDoubleTap ? 900 : 520, 0.08, 'triangle', 0.04);
+      let gain = 1 * state.mult;
+      if(clickChain >= 3){
+        gain *= 3;
+        clickTarget.style.transform = 'scale(1.08)';
+        setTimeout(()=>clickTarget.style.transform = '', 120);
+      }
 
-        // الرسائل المؤقتة في الشات
-        if(isDoubleTap) addChat('النظام', '🔥 ضربة سريعة x3!');
-
-        // رفع المستوى
-        if (fever >= 100) {
-            fever = 0;
-            level += 1;
-            diamonds += 5;
-            localStorage.setItem('skull_level', level);
-            localStorage.setItem('skull_diamonds', diamonds);
-            levelEl.textContent = level;
-            diamondsEl.textContent = diamonds;
-            addChat('النظام', `🎉 مبروك! وصلت للمستوى ${level}! (+5 جواهر)`);
-            beep(1200, 0.2, 'sine', 0.08);
-        }
+      state.points += gain;
+      state.daily += gain;
+      if(state.points > state.best) state.best = state.points;
+      if(Math.random() < 0.08) { state.gems += 1; coinSound.play(); appendSystemMessage('حصلت على جوهرة!'); }
+      clickSound.play();
+      renderState();
+      saveState();
     });
 
-    // انخفاض الحماس التدريجي
-    setInterval(() => {
-        if (fever > 0) {
-            fever = Math.max(0, fever - 2);
-            ring.style.setProperty('--pct', fever);
-        }
-    }, 2000);
+    // Simple leveling: every 1000 points level up
+    function checkLevel(){
+      const need = state.level * 1000;
+      if(state.points >= need){
+        state.level++;
+        appendSystemMessage('تهانينا! وصلت للمستوى ' + state.level);
+        saveState();
+        renderState();
+      }
+    }
+    setInterval(checkLevel, 3000);
 
-    // ==========================================
-    // نظام الشات الوهمي (لإحياء الأجواء)
-    // ==========================================
-    function addChat(user, msg) {
-        const el = document.createElement('div');
-        el.className = 'chat-msg';
-        el.innerHTML = `<b style="color: var(--toxic)">${user}</b>: ${msg}`;
-        chatFeed.appendChild(el);
-        if(chatFeed.children.length > 5) chatFeed.removeChild(chatFeed.firstChild);
+    // Chat UI
+    document.getElementById('openChatBtn').addEventListener('click', openChat);
+    document.getElementById('openChatRail').addEventListener('click', openChat);
+    document.getElementById('openStoreRail').addEventListener('click', ()=>{ window.scrollTo({top:600,behavior:'smooth'}) });
+    document.getElementById('openSupportRail').addEventListener('click', ()=>{ document.getElementById('supportBtn').click() });
+
+    function openChat(){ chatSheet.classList.remove('hidden'); chatSheet.setAttribute('aria-hidden','false'); chatInput.focus(); }
+    function closeChat(){ chatSheet.classList.add('hidden'); chatSheet.setAttribute('aria-hidden','true'); }
+
+    function appendMessage(user, text, isMe){
+      const div = document.createElement('div');
+      div.className = 'msg ' + (isMe ? 'me' : 'other');
+      div.innerHTML = '<strong style="display:block;font-size:13px;margin-bottom:4px">'+escapeHtml(user)+'</strong>' + escapeHtml(text);
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      if(!isMe) notifSound.play();
+    }
+    function appendSystemMessage(text){
+      const div = document.createElement('div');
+      div.className = 'system';
+      div.textContent = text;
+      chatMessages.appendChild(div);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, function(m){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];}); }
+
+    chatSend.addEventListener('click', sendChat);
+    chatInput.addEventListener('keydown', (e)=>{ if(e.key === 'Enter') sendChat(); });
+
+    function sendChat(){
+      const txt = chatInput.value.trim();
+      if(!txt) return;
+      appendMessage('أنت', txt, true);
+      chatInput.value='';
     }
 
-    // رسائل تلقائية (وهمية)
-    setInterval(() => {
-        const msgs = ['🔥 يلا نكمل!', '💀 مستوى جديد قادم!', '⚡ نقاط عالية!'];
-        addChat('مشجع', msgs[Math.floor(Math.random() * msgs.length)]);
-    }, 6000);
+    // Admin logic
+    document.getElementById('openAdminBtn').addEventListener('click', ()=>{ adminSheet.classList.remove('hidden'); adminSheet.setAttribute('aria-hidden','false'); });
+    document.getElementById('openAdminRail').addEventListener('click', ()=>{ adminSheet.classList.remove('hidden'); adminSheet.setAttribute('aria-hidden','false'); });
 
-    // رسالة ترحيبية
-    setTimeout(() => addChat('Skull Realms', 'اهلاً بك في النسخة الذهبية!'), 1000);
+    function closeAdmin(){ adminSheet.classList.add('hidden'); adminSheet.setAttribute('aria-hidden','true'); adminPass.value=''; adminPanel.style.display='none'; adminLogin.style.display='block'; }
 
-    // ==========================================
-    // تفعيل الأزرار الجانبية
-    // ==========================================
-    document.getElementById('chatBtn').onclick = () => {
-        addChat('النظام', '💬 الشات الحي قيد التفعيل قريباً!');
-        beep(300, 0.1, 'square', 0.02);
-    };
-    document.getElementById('storeBtn').onclick = () => {
-        addChat('النظام', '💎 المتجر والجواهر قادمون في التحديث القادم!');
-        beep(300, 0.1, 'square', 0.02);
-    };
-    document.getElementById('supportBtn').onclick = () => {
-        addChat('النظام', '🤍 شكراً لدعمك! سنضيف زر الدعم الحقيقي قريباً.');
-        beep(300, 0.1, 'square', 0.02);
+    const ADMIN_HASH = 'b3b0b3f0b3f6b2a1c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b1c2d3e4f5a6b';
+
+    async function sha256hex(str){
+      const buf = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+
+    adminEnter.addEventListener('click', async ()=>{
+      const val = adminPass.value || '';
+      const h = await sha256hex(val);
+      if(h === ADMIN_HASH){
+        adminLogin.style.display='none';
+        adminPanel.style.display='block';
+      } else {
+        alert('كلمة السر خاطئة');
+      }
+    });
+
+    document.getElementById('sendBroadcast').addEventListener('click', ()=>{
+      const txt = document.getElementById('broadcastInput').value.trim();
+      if(!txt) return alert('اكتب رسالة');
+      appendSystemMessage('تم إرسال الرسالة العامة');
+      document.getElementById('broadcastInput').value='';
+    });
+
+    // PayPal Buttons
+    const purchaseMap = {
+      'paypal-button-100': {amount:'5.00', label:'+100 نقاط'},
+      'paypal-button-500': {amount:'15.00', label:'+500 نقاط'},
+      'paypal-button-1200': {amount:'30.00', label:'+1200 نقاط'}
     };
 
-</script>
-</body>
-</html>
+    Object.keys(purchaseMap).forEach(id=>{
+      paypal.Buttons({
+        style:{layou
