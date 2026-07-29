@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>Skull Realms</title>
+    <title>Skull Realms — النسخة الذهبية</title>
     <script src="/socket.io/socket.io.js"></script>
     <style>
         :root { --bg: #0d0d11; --panel: #1a1a22; --gold: #e0b23d; --toxic: #b6ff3d; --ember: #ff4757; --violet: #9b6bff; }
@@ -14,6 +14,7 @@
         /* HUD */
         .hud { display: flex; justify-content: space-between; padding: 15px; font-weight: 700; border-bottom: 1px solid #222; }
         .hud .title { font-size: 20px; letter-spacing: 1px; }
+        .diamond-pill { background: rgba(155,107,255,0.15); padding: 4px 12px; border-radius: 20px; font-size: 14px; }
         
         /* Arena */
         .arena { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
@@ -41,7 +42,7 @@
 <div class="stage">
     <div class="hud">
         <div class="title">💀 SKULL REALMS</div>
-        <div>💎 <span id="diamonds">120</span></div>
+        <div class="diamond-pill">💎 <span id="diamonds">0</span></div>
     </div>
     <div class="arena">
         <div class="ring" id="ring" style="--pct:0;"></div>
@@ -51,44 +52,114 @@
         <div class="chat-feed" id="chatFeed"></div>
     </div>
     <div class="rail">
-        <div class="rail-btn" id="chatBtn">💬</div>
-        <div class="rail-btn" id="storeBtn">💎</div>
-        <div class="rail-btn" id="supportBtn">🤍</div>
+        <div class="rail-btn" id="chatBtn">💬 الشات</div>
+        <div class="rail-btn" id="storeBtn">💎 المتجر</div>
+        <div class="rail-btn" id="supportBtn">🤍 الدعم</div>
     </div>
 </div>
 
 <script>
+    // ==========================================
+    // الاتصال بالسيرفر
+    // ==========================================
     const socket = io();
-    let score = 0, level = 1, diamonds = 120;
+
+    // ==========================================
+    // نظام النقاط والمستويات والحماس
+    // ==========================================
+    let score = parseInt(localStorage.getItem('skull_score')) || 0;
+    let level = parseInt(localStorage.getItem('skull_level')) || 1;
+    let diamonds = parseInt(localStorage.getItem('skull_diamonds')) || 0;
+    let fever = 0;
+    let comboCount = 0;
+    let lastTapTime = 0;
+
     const scoreEl = document.getElementById('score');
     const levelEl = document.getElementById('level');
     const ring = document.getElementById('ring');
     const diamondsEl = document.getElementById('diamonds');
-    const chatFeed = document.getElementById('chatFeed');
     const skullBtn = document.getElementById('skullBtn');
+    const chatFeed = document.getElementById('chatFeed');
 
-    // 1. الضغط على الجمجمة
-    skullBtn.addEventListener('click', () => {
-        score += 1;
+    // تحديث الواجهة عند البدء
+    scoreEl.textContent = score;
+    levelEl.textContent = level;
+    diamondsEl.textContent = diamonds;
+
+    // ==========================================
+    // نظام الصوت (المحسن)
+    // ==========================================
+    let audioCtx;
+    function beep(freq, dur, type, gain) {
+        try {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const o = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            o.type = type || 'triangle';
+            o.frequency.value = freq;
+            g.gain.value = gain || 0.05;
+            o.connect(g); g.connect(audioCtx.destination);
+            o.start();
+            g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+            o.stop(audioCtx.currentTime + dur);
+        } catch (e) {}
+    }
+
+    // ==========================================
+    // الضربة الرئيسية (مع النقر المزدوج والمضاعف)
+    // ==========================================
+    skullBtn.addEventListener('click', (e) => {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const now = Date.now();
+        const isDoubleTap = (now - lastTapTime) < 250; // نقرتان سريعتان = x3
+        lastTapTime = now;
+        
+        const multiplier = isDoubleTap ? 3 : 1;
+        const gain = Math.round(1 * multiplier);
+        
+        score += gain;
+        fever = Math.min(fever + (isDoubleTap ? 6 : 2), 100);
+        
+        // حفظ التقدم
+        localStorage.setItem('skull_score', score);
         scoreEl.textContent = score;
-        let fever = Math.min(100, score % 100); // محاكاة الحماس
+        
+        // تحديث حلقة الحماس
         ring.style.setProperty('--pct', fever);
-        if(score % 50 === 0) {
+        document.querySelector('.level-label').textContent = `المستوى ${level}`;
+
+        // الصوت
+        beep(isDoubleTap ? 900 : 520, 0.08, 'triangle', 0.04);
+
+        // الرسائل المؤقتة في الشات
+        if(isDoubleTap) addChat('النظام', '🔥 ضربة سريعة x3!');
+
+        // رفع المستوى
+        if (fever >= 100) {
+            fever = 0;
             level += 1;
-            levelEl.textContent = level;
             diamonds += 5;
+            localStorage.setItem('skull_level', level);
+            localStorage.setItem('skull_diamonds', diamonds);
+            levelEl.textContent = level;
             diamondsEl.textContent = diamonds;
+            addChat('النظام', `🎉 مبروك! وصلت للمستوى ${level}! (+5 جواهر)`);
+            beep(1200, 0.2, 'sine', 0.08);
         }
     });
 
-    // 2. الشات الوهمي (للاختبار)
+    // انخفاض الحماس التدريجي
     setInterval(() => {
-        const msgs = ['🔥 جوووو!', '💀 يلا نكمل', '⚡ مستوى جديد!'];
-        const msg = msgs[Math.floor(Math.random() * msgs.length)];
-        addChat('لاعب', msg);
-    }, 5000);
+        if (fever > 0) {
+            fever = Math.max(0, fever - 2);
+            ring.style.setProperty('--pct', fever);
+        }
+    }, 2000);
 
-    // دالة إضافة الشات
+    // ==========================================
+    // نظام الشات الوهمي (لإحياء الأجواء)
+    // ==========================================
     function addChat(user, msg) {
         const el = document.createElement('div');
         el.className = 'chat-msg';
@@ -97,10 +168,31 @@
         if(chatFeed.children.length > 5) chatFeed.removeChild(chatFeed.firstChild);
     }
 
-    // الأزرار (تجريبية)
-    document.getElementById('chatBtn').onclick = () => alert('💬 الشات قيد التطوير!');
-    document.getElementById('storeBtn').onclick = () => alert('💎 المتجر قريباً!');
-    document.getElementById('supportBtn').onclick = () => alert('🤍 شكراً لدعمك!');
+    // رسائل تلقائية (وهمية)
+    setInterval(() => {
+        const msgs = ['🔥 يلا نكمل!', '💀 مستوى جديد قادم!', '⚡ نقاط عالية!'];
+        addChat('مشجع', msgs[Math.floor(Math.random() * msgs.length)]);
+    }, 6000);
+
+    // رسالة ترحيبية
+    setTimeout(() => addChat('Skull Realms', 'اهلاً بك في النسخة الذهبية!'), 1000);
+
+    // ==========================================
+    // تفعيل الأزرار الجانبية
+    // ==========================================
+    document.getElementById('chatBtn').onclick = () => {
+        addChat('النظام', '💬 الشات الحي قيد التفعيل قريباً!');
+        beep(300, 0.1, 'square', 0.02);
+    };
+    document.getElementById('storeBtn').onclick = () => {
+        addChat('النظام', '💎 المتجر والجواهر قادمون في التحديث القادم!');
+        beep(300, 0.1, 'square', 0.02);
+    };
+    document.getElementById('supportBtn').onclick = () => {
+        addChat('النظام', '🤍 شكراً لدعمك! سنضيف زر الدعم الحقيقي قريباً.');
+        beep(300, 0.1, 'square', 0.02);
+    };
+
 </script>
 </body>
 </html>
