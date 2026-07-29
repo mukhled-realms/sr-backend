@@ -1,501 +1,106 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-<title>Skull Realms — TikTok Live Edition</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Teko:wght@500;600;700&display=swap" rel="stylesheet">
-<script src="/socket.io/socket.io.js"></script>
-<!-- استبدل 'sb' بـ Client ID الحقيقي الخاص بك من بايبال -->
-<script src="https://www.paypal.com/sdk/js?client-id=sb&currency=USD"></script>
-<style>
-  :root{
-    --bg-0: #0B0C10; /* رمادي مزرق مريح للعين */
-    --bg-1: #1F2833;
-    --bone: #C5C6C7; /* أبيض هادئ */
-    --bone-dim: #8d897e;
-    --toxic: #b6ff3d;
-    --ember: #FF3366; /* أحمر زاهي */
-    --violet: #9b6bff;
-    --gold: #e0b23d;
-    --panel: #17171d;
-    --panel-line: #2a2a33;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{height:100%;}
-  body{
-    margin:0;
-    background: radial-gradient(ellipse at 50% -10%, rgba(155,107,255,0.1), transparent 55%),
-                radial-gradient(ellipse at 85% 100%, rgba(182,255,61,0.05), transparent 45%),
-                var(--bg-0);
-    color:var(--bone);
-    font-family:'Cairo', sans-serif;
-    overflow:hidden;
-    height:100dvh;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-  }
-  .stage{
-    width:100%; max-width:460px; height:100dvh; max-height:940px;
-    position:relative; display:flex; flex-direction:column;
-    background:linear-gradient(180deg, var(--bg-1), var(--bg-0));
-    border-inline:1px solid var(--panel-line);
-    overflow:hidden;
-  }
-
-  /* HUD */
-  .hud-top{ padding:14px 16px 10px; display:flex; align-items:center; justify-content:space-between; z-index:5; }
-  .brand{ display:flex; align-items:center; gap:8px; }
-  .brand .mark{ width:26px; height:26px; display:grid; place-items:center; filter:drop-shadow(0 0 6px rgba(182,255,61,.5)); font-size:18px; }
-  .brand .name{ font-family:'Teko',sans-serif; font-weight:700; font-size:20px; letter-spacing:.5px; }
-  .live-pill{ display:flex; align-items:center; gap:5px; background:rgba(255,51,102,0.12); border:1px solid rgba(255,51,102,.4); color:var(--ember); font-size:11px; font-weight:700; padding:3px 9px; border-radius:20px; }
-  .live-pill .dot{ width:6px; height:6px; border-radius:50%; background:var(--ember); box-shadow:0 0 6px var(--ember); animation:pulse 1.4s infinite; }
-  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
-  .diamond-pill{ display:flex; align-items:center; gap:6px; background:rgba(155,107,255,.12); border:1px solid rgba(155,107,255,.4); padding:4px 10px; border-radius:20px; font-size:12px; font-weight:700; color:var(--violet); }
-
-  .progress-wrap{ padding:0 16px; margin-top:2px; z-index:5; }
-  .progress-row{ display:flex; justify-content:space-between; font-size:11px; color:var(--bone-dim); }
-  .progress-row b{ color:var(--toxic); font-weight:700; }
-
-  /* Chat Feed */
-  .chat-feed{
-    position:absolute; left:12px; bottom:150px; width:65%; max-width:280px;
-    display:flex; flex-direction:column; gap:6px; z-index:3; pointer-events:none;
-    mask-image:linear-gradient(to top, black 60%, transparent 100%);
-  }
-  .chat-line{
-    font-size:12px; line-height:1.5; background:rgba(23,23,29,.75);
-    backdrop-filter:blur(4px); border:1px solid rgba(255,255,255,.08);
-    padding:6px 10px; border-radius:12px 12px 12px 2px;
-    animation:chatIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-    transform-origin: left bottom;
-  }
-  .chat-line .u{ color:var(--violet); font-weight:700; }
-  .chat-line.gift-msg { border-color:var(--gold); background:rgba(224,178,61,0.15); }
-  .chat-line.gift-msg .u { color:var(--gold); }
-  @keyframes chatIn{
-    from{opacity:0; transform:translateX(-15px) scale(0.95);}
-    to{opacity:1; transform:translateX(0) scale(1);}
-  }
-
-  /* Arena */
-  .arena{ flex:1; position:relative; display:flex; align-items:center; justify-content:center; }
-  .ring{
-    position:absolute; width:min(72vw,300px); height:min(72vw,300px);
-    border-radius:50%; border:2px solid var(--panel-line);
-    transition: box-shadow 0.3s;
-  }
-  .ring::before{
-    content:''; position:absolute; inset:-2px; border-radius:50%; padding:4px;
-    background:conic-gradient(var(--toxic) calc(var(--pct,0) * 1%), transparent 0);
-    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor; mask-composite: exclude;
-    transition:background .2s linear;
-  }
-  #skullBtn{
-    position:relative; width:min(56vw,230px); height:min(56vw,230px);
-    border-radius:50%; border:none; background:radial-gradient(circle at 35% 30%, #24242c, #0d0d11 70%);
-    display:grid; place-items:center; cursor:pointer;
-    box-shadow: 0 0 0 1px var(--panel-line), inset 0 0 40px rgba(0,0,0,.6);
-    transition:transform .06s ease-out; z-index:2;
-    touch-action: manipulation; /* يمنع التقريب عند النقر المزدوج */
-  }
-  #skullBtn:active{ transform:scale(.94); }
-  #skullBtn .emoji{ font-size:min(26vw,110px); filter:drop-shadow(0 0 18px rgba(182,255,61,.25)); transition:filter .15s; }
-  #skullBtn.hot { animation: heartbeat 0.5s infinite; }
-  #skullBtn.hot .emoji{ filter:drop-shadow(0 0 28px rgba(255,51,102,.6)); }
-  @keyframes heartbeat { 0%{transform:scale(1);} 50%{transform:scale(1.03);} 100%{transform:scale(1);} }
-
-  .score-display{ position:absolute; top:14px; left:50%; transform:translateX(-50%); text-align:center; z-index:4; }
-  .score-display .num{ font-family:'Teko', sans-serif; font-size:56px; font-weight:700; line-height:1; letter-spacing:1px; text-shadow:0 0 20px rgba(182,255,61,.25); }
-  .score-display .lbl{ font-size:11px; color:var(--bone-dim); letter-spacing:2px; margin-top:2px; }
-  
-  .mult-badge{
-    position:absolute; bottom:12%; left:50%; transform:translateX(-50%);
-    font-family:'Teko',sans-serif; font-weight:600; font-size:15px;
-    color:var(--gold); background:rgba(224,178,61,.1); border:1px solid rgba(224,178,61,.4);
-    padding:3px 14px; border-radius:20px; z-index:3; opacity:0; transition:opacity .2s;
-  }
-  .mult-badge.show{ opacity:1; }
-
-  /* Floating Bottom Rail */
-  .rail{
-    margin:0 16px 20px; padding:10px; display:flex; gap:10px;
-    background:rgba(23,23,29,.8); backdrop-filter:blur(10px);
-    border:1px solid var(--panel-line); border-radius:20px; z-index:5;
-  }
-  .rail-btn{
-    flex:1; display:flex; flex-direction:column; align-items:center; gap:4px;
-    background:transparent; border:none; padding:8px 4px; min-height:50px;
-    color:var(--bone); font-family:'Cairo'; font-size:11px; font-weight:600; cursor:pointer;
-  }
-  .rail-btn .ic{ font-size:20px; }
-  .rail-btn.support{ color:var(--gold); }
-
-  /* Modals */
-  .sheet-backdrop{ position:absolute; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(3px); display:flex; align-items:flex-end; z-index:20; opacity:0; pointer-events:none; transition:opacity .25s; }
-  .sheet-backdrop.open{ opacity:1; pointer-events:auto; }
-  .sheet{ width:100%; background:var(--bg-1); border-top:1px solid var(--panel-line); border-radius:24px 24px 0 0; padding:20px 20px calc(20px + env(safe-area-inset-bottom)); transform:translateY(100%); transition:transform .3s cubic-bezier(.2,.8,.2,1); max-height:85vh; overflow-y:auto; }
-  .sheet-backdrop.open .sheet{ transform:translateY(0); }
-  .sheet-handle{ width:40px; height:5px; border-radius:3px; background:var(--panel-line); margin:0 auto 16px; }
-  .sheet h3{ margin:0 0 6px; font-size:18px; font-weight:700; }
-  .sheet p.sub{ margin:0 0 16px; font-size:12.5px; color:var(--bone-dim); line-height:1.6; }
-
-  .store-grid{ display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:16px; }
-  .store-item{ background:var(--panel); border:1px solid var(--panel-line); border-radius:16px; padding:16px 10px; text-align:center; cursor:pointer; transition:border .2s; }
-  .store-item.selected { border-color:var(--violet); background:rgba(155,107,255,0.05); }
-  .store-item .icon{ font-size:30px; }
-  .store-item .name{ font-size:13px; font-weight:700; margin-top:6px; }
-  .store-item .price{ font-size:12px; color:var(--violet); margin-top:4px; font-weight:700; }
-
-  .challenge-card { background:linear-gradient(45deg, rgba(224,178,61,0.1), rgba(255,51,102,0.1)); border:1px solid var(--gold); border-radius:16px; padding:16px; text-align:center; margin-bottom:16px; }
-  .challenge-card h4 { margin:0 0 8px; color:var(--gold); font-size:16px; }
-  .challenge-card p { margin:0; font-size:13px; color:var(--bone); line-height:1.5; }
-
-  .close-x{ position:absolute; top:16px; left:16px; width:30px; height:30px; border-radius:50%; background:var(--panel); border:1px solid var(--panel-line); display:grid; place-items:center; color:var(--bone-dim); cursor:pointer; font-size:12px; }
-
-  /* Toast Overlay */
-  .toast{ position:absolute; top:20px; left:50%; transform:translateX(-50%) translateY(-150%); background:linear-gradient(135deg, rgba(182,255,61,.2), rgba(155,107,255,.2)); border:1px solid rgba(182,255,61,.5); color:var(--bone); padding:12px 20px; border-radius:16px; font-size:13px; font-weight:700; z-index:30; transition:transform .3s cubic-bezier(.2,.8,.2,1); text-align:center; max-width:90%; backdrop-filter:blur(5px); }
-  .toast.show{ transform:translateX(-50%) translateY(0); }
-
-  .floaters{ position:absolute; inset:0; pointer-events:none; z-index:6; }
-  .floater{ position:absolute; font-family:'Teko',sans-serif; font-weight:700; font-size:24px; color:var(--toxic); animation:floatUp .8s ease-out forwards; }
-  @keyframes floatUp{ 0%{opacity:1; transform:translateY(0) scale(1);} 100%{opacity:0; transform:translateY(-80px) scale(1.1);} }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>Skull Realms</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        :root { --bg: #0d0d11; --panel: #1a1a22; --gold: #e0b23d; --toxic: #b6ff3d; --ember: #ff4757; --violet: #9b6bff; }
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; background: var(--bg); color: #fff; font-family: 'Cairo', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+        .stage { width: 100%; max-width: 450px; height: 100vh; display: flex; flex-direction: column; border: 1px solid #222; background: #0f0f14; position: relative; }
+        
+        /* HUD */
+        .hud { display: flex; justify-content: space-between; padding: 15px; font-weight: 700; border-bottom: 1px solid #222; }
+        .hud .title { font-size: 20px; letter-spacing: 1px; }
+        
+        /* Arena */
+        .arena { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; }
+        #skullBtn { width: 200px; height: 200px; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #2a2a34, #0d0d11); border: 2px solid #333; display: grid; place-items: center; font-size: 80px; cursor: pointer; transition: transform 0.05s; box-shadow: 0 0 0 1px #333; }
+        #skullBtn:active { transform: scale(0.94); }
+        .score { font-size: 48px; font-family: 'Teko', sans-serif; margin-bottom: 10px; text-shadow: 0 0 15px rgba(182, 255, 61, 0.2); }
+        .level-label { font-size: 14px; color: #888; }
+        
+        /* Rail */
+        .rail { display: flex; gap: 10px; padding: 15px; background: var(--panel); border-top: 1px solid #222; }
+        .rail-btn { flex: 1; padding: 10px; text-align: center; background: #222; border-radius: 10px; cursor: pointer; font-size: 14px; transition: 0.2s; }
+        .rail-btn:active { transform: scale(0.95); }
+        
+        /* Chat Feed */
+        .chat-feed { position: absolute; left: 10px; bottom: 80px; width: 200px; max-height: 300px; overflow-y: auto; pointer-events: none; mask-image: linear-gradient(to top, black 70%, transparent 100%); }
+        .chat-msg { background: rgba(0,0,0,0.7); padding: 6px 10px; border-radius: 8px; margin-bottom: 6px; font-size: 12px; border-left: 3px solid var(--toxic); animation: fadeUp 0.3s; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Fever Ring */
+        .ring { position: absolute; width: 280px; height: 280px; border-radius: 50%; border: 2px solid #333; pointer-events: none; }
+        .ring::before { content: ''; position: absolute; inset: -2px; border-radius: 50%; padding: 2px; background: conic-gradient(var(--toxic) calc(var(--pct,0) * 1%), transparent 0); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; transition: background 0.1s; }
+    </style>
 </head>
 <body>
-
 <div class="stage">
-  <!-- HUD -->
-  <div class="hud-top">
-    <div class="brand">
-      <span class="mark">💀</span>
-      <span class="name">SKULL REALMS</span>
+    <div class="hud">
+        <div class="title">💀 SKULL REALMS</div>
+        <div>💎 <span id="diamonds">120</span></div>
     </div>
-    <div style="display:flex; gap:8px; align-items:center;">
-      <div class="diamond-pill">💎 <span id="diamondCount">120</span></div>
-      <div class="live-pill"><span class="dot"></span>LIVE</div>
+    <div class="arena">
+        <div class="ring" id="ring" style="--pct:0;"></div>
+        <div class="score" id="score">0</div>
+        <div class="level-label">المستوى <span id="level">1</span></div>
+        <button id="skullBtn">💀</button>
+        <div class="chat-feed" id="chatFeed"></div>
     </div>
-  </div>
-
-  <div class="progress-wrap">
-    <div class="progress-row">
-      <span>المستوى <b id="levelNum">1</b></span>
-      <span id="feverLabel">الحماس: 0%</span>
+    <div class="rail">
+        <div class="rail-btn" id="chatBtn">💬</div>
+        <div class="rail-btn" id="storeBtn">💎</div>
+        <div class="rail-btn" id="supportBtn">🤍</div>
     </div>
-  </div>
-
-  <!-- Chat Feed -->
-  <div class="chat-feed" id="chatFeed"></div>
-
-  <!-- Arena -->
-  <div class="arena">
-    <div class="score-display">
-      <div class="num" id="scoreNum">0</div>
-      <div class="lbl">النقاط</div>
-    </div>
-    <div class="ring" id="ring" style="--pct:0"></div>
-    <button id="skullBtn" aria-label="اضغط على الجمجمة">
-      <span class="emoji">💀</span>
-    </button>
-    <div class="mult-badge" id="multBadge">x2 مضاعف!</div>
-    <div class="floaters" id="floaters"></div>
-  </div>
-
-  <!-- Floating Bottom Rail -->
-  <div class="rail">
-    <button class="rail-btn" id="openChallenges">
-      <span class="ic">🏆</span>
-      <span>التحديات</span>
-    </button>
-    <button class="rail-btn" id="openStore">
-      <span class="ic">💎</span>
-      <span>المتجر</span>
-    </button>
-    <button class="rail-btn support" id="openSupport">
-      <span class="ic">🤍</span>
-      <span>دعم المطوّر</span>
-    </button>
-  </div>
-
-  <!-- Challenges / Gifts Sheet -->
-  <div class="sheet-backdrop" id="challengesSheet">
-    <div class="sheet">
-      <div class="close-x" data-close="challengesSheet">✕</div>
-      <div class="sheet-handle"></div>
-      <h3>🏆 تحديات البث المباشر</h3>
-      <p class="sub">تتفاعل هذه التحديات مباشرة مع هدايا وتعليقات الجمهور.</p>
-      
-      <div class="challenge-card">
-        <h4>🎯 تحدي الوردة (Rose)</h4>
-        <p>كل وردة يرسلها الجمهور تزيد الحماس بمقدار 10% وتضاعف النقاط لـ 10 ثوانٍ!</p>
-      </div>
-
-      <div class="challenge-card" style="border-color:var(--violet);">
-        <h4 style="color:var(--violet);">👑 ملك الشات</h4>
-        <p>أكثر شخص يرسل تعليقات سيظهر اسمه بحجم كبير على الشاشة كل 5 دقائق.</p>
-      </div>
-    </div>
-  </div>
-
-  <!-- Store Sheet (PayPal Integration) -->
-  <div class="sheet-backdrop" id="storeSheet">
-    <div class="sheet">
-      <div class="close-x" data-close="storeSheet">✕</div>
-      <div class="sheet-handle"></div>
-      <h3>متجر الجواهر 💎</h3>
-      <p class="sub">اختر الباقة واضغط زر PayPal لإتمام الشراء أمان.</p>
-      <div class="store-grid" id="storeGrid">
-        <div class="store-item selected" data-price="4.99" data-gems="100">
-          <div class="icon">💎</div>
-          <div class="name">حزمة البداية</div>
-          <div class="price">$4.99</div>
-        </div>
-        <div class="store-item" data-price="9.99" data-gems="250">
-          <div class="icon">👑</div>
-          <div class="name">حزمة الزعيم</div>
-          <div class="price">$9.99</div>
-        </div>
-      </div>
-      <div id="paypal-button-container" style="margin-top:15px; min-height:150px;"></div>
-    </div>
-  </div>
-
-  <!-- Support Sheet -->
-  <div class="sheet-backdrop" id="supportSheet">
-    <div class="sheet">
-      <div class="close-x" data-close="supportSheet">✕</div>
-      <div class="sheet-handle"></div>
-      <h3>دعم المطوّر 🤍</h3>
-      <p class="sub">دعمك يساعد في إبقاء الخوادم تعمل وتطوير أحداث جديدة للعبة.</p>
-      <button style="width:100%; padding:14px; background:var(--gold); border:none; border-radius:12px; font-family:'Cairo'; font-weight:700; font-size:14px; color:#000; cursor:pointer;" onclick="showToast('شكراً لدعمك الأسطوري! 💛')">تفعيل دعم وهمي للتجربة</button>
-    </div>
-  </div>
-
-  <div class="toast" id="systemToast">رسالة نظام</div>
 </div>
 
 <script>
-(function(){
-  // ---------- State & LocalStorage ----------
-  let score = parseInt(localStorage.getItem('sr_score')) || 0;
-  let level = parseInt(localStorage.getItem('sr_level')) || 1;
-  let diamonds = parseInt(localStorage.getItem('sr_diamonds')) || 120;
-  let fever = 0;
+    const socket = io();
+    let score = 0, level = 1, diamonds = 120;
+    const scoreEl = document.getElementById('score');
+    const levelEl = document.getElementById('level');
+    const ring = document.getElementById('ring');
+    const diamondsEl = document.getElementById('diamonds');
+    const chatFeed = document.getElementById('chatFeed');
+    const skullBtn = document.getElementById('skullBtn');
 
-  const scoreNum = document.getElementById('scoreNum');
-  const levelNum = document.getElementById('levelNum');
-  const ring = document.getElementById('ring');
-  const skullBtn = document.getElementById('skullBtn');
-  const diamondCount = document.getElementById('diamondCount');
-  const chatFeed = document.getElementById('chatFeed');
-  
-  // Initialize UI with saved data
-  scoreNum.textContent = score.toLocaleString('en-US');
-  levelNum.textContent = level;
-  diamondCount.textContent = diamonds;
-
-  // Daily Login Bonus
-  const today = new Date().toDateString();
-  const lastLogin = localStorage.getItem('sr_lastLogin');
-  if(lastLogin !== today) {
-    diamonds += 50;
-    localStorage.setItem('sr_diamonds', diamonds);
-    localStorage.setItem('sr_lastLogin', today);
-    diamondCount.textContent = diamonds;
-    setTimeout(() => showToast('🎁 مكافأة يومية: حصلت على 50 جوهرة!'), 1500);
-  }
-
-  // ---------- Audio System ----------
-  let audioCtx;
-  function beep(freq, dur, type, gainVol){
-    try{
-      if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      const o = audioCtx.createOscillator();
-      const g = audioCtx.createGain();
-      o.type = type || 'triangle';
-      o.frequency.value = freq;
-      g.gain.value = gainVol || 0.05;
-      o.connect(g); g.connect(audioCtx.destination);
-      o.start();
-      g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
-      o.stop(audioCtx.currentTime + dur);
-    }catch(e){}
-  }
-
-  // ---------- UI Functions ----------
-  function showToast(msg) {
-    const toast = document.getElementById('systemToast');
-    toast.textContent = msg;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3500);
-  }
-
-  function appendChat(user, msg, isGift = false) {
-    const el = document.createElement('div');
-    el.className = 'chat-line' + (isGift ? ' gift-msg' : '');
-    el.innerHTML = `<span class="u">${user}</span>: ${msg}`;
-    chatFeed.appendChild(el);
-    if(chatFeed.children.length > 5) chatFeed.removeChild(chatFeed.firstChild);
-  }
-
-  function spawnFloater(x, y, text, hot){
-    const el = document.createElement('div');
-    el.className = 'floater';
-    el.textContent = text;
-    el.style.left = x + 'px'; el.style.top = y + 'px';
-    if(hot) el.style.color = 'var(--ember)';
-    document.getElementById('floaters').appendChild(el);
-    setTimeout(()=> el.remove(), 800);
-  }
-
-  // ---------- Game Mechanics (Double Tap included) ----------
-  let comboMult = 1;
-  let lastTapTime = 0;
-
-  skullBtn.addEventListener('click', (e)=>{
-    // Initialize AudioContext on first tap
-    if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    
-    const now = Date.now();
-    const fast = (now - lastTapTime) < 200; // Double tap threshold
-    lastTapTime = now;
-    
-    comboMult = fast ? 3 : 1; // 3x multiplier for fast double tap
-    
-    const gain = Math.round(1 * comboMult);
-    score += gain;
-    fever = Math.min(fever + (fast ? 4 : 2), 100);
-    
-    // Save state
-    localStorage.setItem('sr_score', score);
-    scoreNum.textContent = score.toLocaleString('en-US');
-
-    const hot = fever >= 80;
-    const superHot = fever >= 90;
-    
-    skullBtn.classList.toggle('hot', superHot);
-    document.getElementById('feverLabel').textContent = 'الحماس: ' + Math.round(fever) + '%';
-    ring.style.setProperty('--pct', fever);
-    
-    // Dynamic ring styling
-    if(superHot) ring.style.boxShadow = '0 0 25px var(--ember)';
-    else if(hot) ring.style.boxShadow = '0 0 15px var(--gold)';
-    else ring.style.boxShadow = 'none';
-
-    if(comboMult > 1){
-      const badge = document.getElementById('multBadge');
-      badge.textContent = 'x' + comboMult + ' ضربة سريعة!';
-      badge.classList.add('show');
-      clearTimeout(window._mt);
-      window._mt = setTimeout(()=> badge.classList.remove('show'), 400);
-    }
-
-    const rect = skullBtn.getBoundingClientRect();
-    const x = (e.clientX || rect.left + rect.width/2) - 20 + (Math.random()*30-15);
-    const y = (e.clientY || rect.top + rect.height/2) - 40;
-    spawnFloater(x, y, '+' + gain, superHot);
-
-    // Audio cue changes pitch when fever > 90
-    beep(superHot ? 1000 : (hot ? 700 : 520), 0.08, 'triangle', 0.04);
-
-    // Level up logic
-    if(fever >= 100){
-      fever = 0;
-      level += 1;
-      diamonds += 10;
-      localStorage.setItem('sr_level', level);
-      localStorage.setItem('sr_diamonds', diamonds);
-      levelNum.textContent = level;
-      diamondCount.textContent = diamonds;
-      ring.style.boxShadow = 'none';
-      beep(1200, 0.2, 'sine', 0.08);
-      showToast(`🔥 ارتقيت للمستوى ${level}! (+10 جواهر)`);
-    }
-  });
-
-  // ---------- TikTok Live Socket.io Integration (Real Chat Ready) ----------
-  try {
-    const socket = io(); // Requires backend Node.js server
-    
-    // Listen for real TikTok comments
-    socket.on('tiktok_chat', (data) => {
-      // data expected format: { uniqueId: 'username', comment: 'hello' }
-      appendChat(data.uniqueId, data.comment);
+    // 1. الضغط على الجمجمة
+    skullBtn.addEventListener('click', () => {
+        score += 1;
+        scoreEl.textContent = score;
+        let fever = Math.min(100, score % 100); // محاكاة الحماس
+        ring.style.setProperty('--pct', fever);
+        if(score % 50 === 0) {
+            level += 1;
+            levelEl.textContent = level;
+            diamonds += 5;
+            diamondsEl.textContent = diamonds;
+        }
     });
 
-    // Listen for real TikTok Gifts
-    socket.on('tiktok_gift', (data) => {
-      // data expected format: { uniqueId: 'username', giftName: 'Rose', giftCount: 1 }
-      appendChat(data.uniqueId, `أرسل ${data.giftCount}x ${data.giftName} 🎁`, true);
-      beep(800, 0.3, 'square', 0.05); // Special sound for gifts
-      
-      // Affect the game (Gift triggers Fever boost)
-      fever = Math.min(fever + 15, 100);
-      ring.style.setProperty('--pct', fever);
-      showToast(`🔥 ${data.uniqueId} أشعل الحماس بهدية!`);
-    });
-  } catch(e) {
-    console.log("Socket.io not connected. Waiting for backend setup.");
-    // Fallback Mock Chat for testing without server
-    const mockNames = ['ريم','Faisal','دانة','Turki','Luna','عبدالله'];
+    // 2. الشات الوهمي (للاختبار)
     setInterval(() => {
-      const n = mockNames[Math.floor(Math.random()*mockNames.length)];
-      appendChat(n, 'يلا شباب نبي نوصل ليفل ' + (level+1));
-    }, 4500);
-  }
+        const msgs = ['🔥 جوووو!', '💀 يلا نكمل', '⚡ مستوى جديد!'];
+        const msg = msgs[Math.floor(Math.random() * msgs.length)];
+        addChat('لاعب', msg);
+    }, 5000);
 
-  // ---------- Store & PayPal Integration ----------
-  let selectedPrice = '4.99';
-  let selectedGems = 100;
-  
-  const storeItems = document.querySelectorAll('.store-item');
-  storeItems.forEach(item => {
-    item.addEventListener('click', () => {
-      storeItems.forEach(i => i.classList.remove('selected'));
-      item.classList.add('selected');
-      selectedPrice = item.getAttribute('data-price');
-      selectedGems = parseInt(item.getAttribute('data-gems'));
-    });
-  });
+    // دالة إضافة الشات
+    function addChat(user, msg) {
+        const el = document.createElement('div');
+        el.className = 'chat-msg';
+        el.innerHTML = `<b style="color: var(--toxic)">${user}</b>: ${msg}`;
+        chatFeed.appendChild(el);
+        if(chatFeed.children.length > 5) chatFeed.removeChild(chatFeed.firstChild);
+    }
 
-  if (window.paypal) {
-    paypal.Buttons({
-      createOrder: function(data, actions) {
-        return actions.order.create({
-          purchase_units: [{ amount: { value: selectedPrice } }]
-        });
-      },
-      onApprove: function(data, actions) {
-        return actions.order.capture().then(function(details) {
-          closeSheet('storeSheet');
-          diamonds += selectedGems;
-          localStorage.setItem('sr_diamonds', diamonds);
-          diamondCount.textContent = diamonds;
-          showToast(`تمت إضافة ${selectedGems} جوهرة بنجاح! 💎`);
-        });
-      }
-    }).render('#paypal-button-container');
-  }
-
-  // ---------- Modals/Sheets Logic ----------
-  function openSheet(id){ document.getElementById(id).classList.add('open'); }
-  function closeSheet(id){ document.getElementById(id).classList.remove('open'); }
-
-  document.getElementById('openChallenges').addEventListener('click', ()=> openSheet('challengesSheet'));
-  document.getElementById('openStore').addEventListener('click', ()=> openSheet('storeSheet'));
-  document.getElementById('openSupport').addEventListener('click', ()=> openSheet('supportSheet'));
-
-  document.querySelectorAll('[data-close]').forEach(btn=>{
-    btn.addEventListener('click', ()=> closeSheet(btn.getAttribute('data-close')));
-  });
-  document.querySelectorAll('.sheet-backdrop').forEach(sb=>{
-    sb.addEventListener('click', (e)=>{ if(e.target === sb) sb.classList.remove('open'); });
-  });
-
-})();
+    // الأزرار (تجريبية)
+    document.getElementById('chatBtn').onclick = () => alert('💬 الشات قيد التطوير!');
+    document.getElementById('storeBtn').onclick = () => alert('💎 المتجر قريباً!');
+    document.getElementById('supportBtn').onclick = () => alert('🤍 شكراً لدعمك!');
 </script>
 </body>
 </html>
