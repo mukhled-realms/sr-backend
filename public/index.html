@@ -3,151 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>Skull Realms - منصة الألعاب</title>
-    <!-- Tailwind CSS -->
+    <title>Skull Realms - المنصة الحية</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PixiJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
-    <!-- Howler.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-    <!-- Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Orbitron:wght@500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Cairo', sans-serif; }
+        :root {
+            --bg-900: #05040a;
+            --neon-blue: #00d0ff;
+            --neon-purple: #8a3cff;
+            --lux-gold: #ffd166;
+            --glass-veil: rgba(255,255,255,0.04);
+            --accent-emerald: #0ea5a4;
+        }
+        body { font-family: 'Cairo', sans-serif; background-color: var(--bg-900); }
+        .font-orbitron { font-family: 'Orbitron', sans-serif; }
+        #game-container {
+            background: radial-gradient(circle at 30% 30%, rgba(0,208,255,0.08), transparent 40%),
+                        linear-gradient(180deg, rgba(10,10,12,0.6), rgba(0,0,0,0.6));
+            box-shadow: 0 8px 40px rgba(0,208,255,0.05), inset 0 2px 12px rgba(255,209,102,0.02);
+            backdrop-filter: blur(6px);
+        }
+        #chat-messages::-webkit-scrollbar { width: 6px; }
+        #chat-messages::-webkit-scrollbar-track { background: transparent; }
+        #chat-messages::-webkit-scrollbar-thumb { background: var(--glass-veil); border-radius: 3px; }
     </style>
 </head>
-<body class="bg-slate-950 text-white font-sans p-3 max-w-md mx-auto min-h-screen flex flex-col justify-between select-none">
-    <!-- الهيدر العلوي مع زر قناة المحدث -->
-    <header class="bg-slate-900 p-3 rounded-2xl mb-3 flex items-center justify-between">
-        <div class="flex items-center space-x-2 space-x-reverse">
-            <span class="text-xl">💀</span>
-            <h1 class="font-black text-yellow-400 text-sm">Skull Realms</h1>
-        </div>
-        <a href="https://www.youtube.com/@مخلدالمنزي-ط5" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl text-slate-200 flex items-center gap-1">
-            <span>قناتي</span> 🔗
-        </a>
+<body class="text-white p-3 max-w-md mx-auto min-h-screen flex flex-col justify-between select-none overflow-hidden">
+    
+    <!-- الشريط العلوي الرفيع -->
+    <header class="flex items-center justify-between text-xs mb-3 px-1">
+        <button class="text-yellow-400 flex items-center gap-1">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+            الإعدادات
+        </button>
+        <span class="text-yellow-500 font-orbitron tracking-wider">المرحلة 3</span>
+        <span class="text-cyan-400 flex items-center gap-1.5">
+            <span class="relative flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
+            </span>
+            <span id="player-count">142</span> متصلاً
+        </span>
     </header>
 
     <!-- المحتوى الرئيسي -->
-    <div class="space-y-3 flex-1 flex flex-col">
-        <!-- ساحة اللعبة -->
-        <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-xl">
-            <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded-xl border border-slate-800/60 mb-2">
-                <span class="text-xs">🎮 اضغط على الجمجمة للجمع</span>
-                <span id="score-text" class="text-yellow-400 font-bold">النقاط: 0</span>
-            </div>
-            <div id="game-container" class="w-full h-[190px] bg-black/70 rounded-xl flex items-center justify-center overflow-hidden relative"></div>
-        </div>
-
-        <!-- قائمة المتصدرين -->
-        <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-xl">
-            <h3 class="text-xs font-bold text-yellow-400 mb-2">🏆 لوحة الشرف</h3>
-            <div class="text-xs space-y-1.5">
-                <div class="flex justify-between items-center bg-slate-950/60 p-2 rounded-xl border border-slate-800/60">
-                    <span class="text-slate-200 font-medium">1. أنت (مخلد)</span>
-                    <span id="lb-score" class="text-yellow-400 font-bold">0</span>
-                </div>
-                <div class="flex justify-between items-center bg-slate-950/30 p-2 rounded-xl border border-slate-800/30">
-                    <span class="text-slate-200">2. اللاعب المحترف</span>
-                    <span>450</span>
+    <main class="space-y-3 flex-1 flex flex-col">
+        
+        <!-- لوحة HUD العلوية -->
+        <div class="grid grid-cols-3 gap-2">
+            <div class="bg-slate-900/70 p-2 rounded-xl border border-slate-800 flex items-center gap-2">
+                <span class="text-lg">🌟</span>
+                <div>
+                    <div class="text-[10px] text-slate-400">النقاط</div>
+                    <div id="score-text" class="text-sm font-bold text-yellow-400 font-orbitron">0</div>
                 </div>
             </div>
+            <div class="bg-slate-900/70 p-2 rounded-xl border border-slate-800 flex items-center justify-center gap-2">
+                <span class="text-lg">🛡️</span>
+                <div class="text-center">
+                    <div class="text-[10px] text-slate-400">المضاعف</div>
+                    <div class="text-sm font-bold text-purple-400 font-orbitron">X1</div>
+                </div>
+            </div>
+            <div class="bg-slate-900/70 p-2 rounded-xl border border-slate-800 flex items-center justify-end gap-2">
+                <div class="text-right">
+                    <div class="text-[10px] text-slate-400">الرتبة</div>
+                    <div class="text-sm font-bold text-white">مبتدئ</div>
+                </div>
+                <span class="text-lg">⚔️</span>
+            </div>
         </div>
 
-        <!-- الشات الحي المتصل بالسيرفر -->
-        <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-xl flex flex-col h-[140px]">
-            <h3 class="text-xs font-bold text-slate-300 mb-1.5">💬 الشات المباشر</h3>
-            <div id="chat-messages" class="flex-1 overflow-y-auto text-xs space-y-1 bg-slate-950/80 p-2 rounded-xl border border-slate-800/60 mb-2">
-                <div class="text-indigo-400 font-medium">النظام: متصل بالسيرفر بنجاح!</div>
+        <!-- المنطقة المركزية (النواة النيونية) -->
+        <div class="flex-1 flex items-center justify-center relative min-h-[220px]">
+            <div id="flying-text" class="absolute font-orbitron font-bold text-lg text-yellow-300 opacity-0 transition-all duration-300 z-20 pointer-events-none">+15</div>
+            <div id="game-container" class="w-[240px] h-[240px] rounded-full relative overflow-hidden border-2 border-slate-800 flex items-center justify-center">
+                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2 h-1.5 bg-slate-800 rounded-full overflow-hidden z-10">
+                    <div id="click-power-bar" class="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full w-[70%] transition-all"></div>
+                </div>
             </div>
-            <div class="flex gap-1.5">
-                <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <button onclick="sendMsg()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-xl text-xs font-bold text-white transition">إرسال</button>
+        </div>
+
+        <!-- لوحة المتصدرين والشات -->
+        <div class="grid grid-cols-5 gap-3 h-[130px]">
+            <div class="col-span-2 bg-slate-900 rounded-2xl p-2.5 border border-slate-800 shadow-xl overflow-hidden">
+                <h3 class="text-xs font-bold text-yellow-400 mb-1.5 font-orbitron">🏆 القمة</h3>
+                <div class="text-xs space-y-1 text-slate-300">
+                    <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/60">
+                        <span class="font-medium text-white truncate">أنت (مخلد)</span>
+                        <span id="lb-score" class="text-yellow-400 font-bold font-orbitron">0</span>
+                    </div>
+                    <div class="flex justify-between items-center p-1.5 text-slate-400">
+                        <span>المحترف</span>
+                        <span class="font-orbitron">450</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-span-3 bg-slate-900 rounded-2xl p-2.5 border border-slate-800 shadow-xl flex flex-col">
+                <h3 class="text-xs font-bold text-slate-300 mb-1 font-orbitron">💬 الشات</h3>
+                <div id="chat-messages" class="flex-1 overflow-y-auto text-xs space-y-1 bg-slate-950/80 p-2 rounded-xl border border-slate-800/60 mb-1.5">
+                    <div class="text-teal-400"><span class="font-semibold text-indigo-400">النظام:</span> متصل بالسيرفر!</div>
+                </div>
+                <div class="flex gap-1">
+                    <input type="text" id="chat-input" placeholder="رسالة..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <button onclick="sendMsg()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1 rounded-xl text-xs font-bold text-white transition">إرسال</button>
+                </div>
             </div>
         </div>
 
         <!-- زر دعم المطور -->
-        <a href="https://paypal.me/MkledAnze900" target="_blank" class="block w-full text-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-2xl text-sm shadow-lg transition">
+        <a href="https://paypal.me/MkledAnze900" target="_blank" class="block w-full text-center bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2.5 px-4 rounded-2xl text-xs shadow-lg transition font-orbitron tracking-wider flex items-center justify-center gap-2">
             💳 دعم المطور (تبرع)
         </a>
-    </div>
+    </main>
 
-    <!-- كود اللعبة والاتصال -->
     <script>
-        const sound = new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'], volume: 0.5 });
+        const sound = new Howl({ 
+            src: ['https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'], 
+            volume: 0.4 
+        });
+        
         let score = 0;
 
-        // تشغيل PixiJS (متوافق مع إصدار 7.3.2)
         const containerElem = document.getElementById('game-container');
         const app = new PIXI.Application({
-            background: '#030712',
+            backgroundAlpha: 0,
             width: containerElem.clientWidth,
-            height: containerElem.clientHeight
+            height: containerElem.clientHeight,
+            antialias: true,
+            resolution: window.devicePixelRatio || 1,
         });
         containerElem.appendChild(app.view);
 
-        const gameObj = new PIXI.Container();
-        const circle = new PIXI.Graphics();
-        circle.beginFill(0xeab308);
-        circle.drawCircle(0, 0, 40);
-        circle.endFill();
-        
-        gameObj.addChild(circle);
-        gameObj.x = app.screen.width / 2;
-        gameObj.y = app.screen.height / 2;
-        gameObj.interactive = true;
-        gameObj.cursor = 'pointer';
-        app.stage.addChild(gameObj);
+        const coreContainer = new PIXI.Container();
+        coreContainer.x = app.screen.width / 2;
+        coreContainer.y = app.screen.height / 2;
+        coreContainer.interactive = true;
+        coreContainer.cursor = 'pointer';
+        app.stage.addChild(coreContainer);
 
-        gameObj.on('pointerdown', () => {
+        // الطبقة الخارجية (وهج نيون)
+        const outerGlow = new PIXI.Graphics();
+        outerGlow.beginFill(0x8a3cff, 0.15);
+        outerGlow.drawCircle(0, 0, 75);
+        outerGlow.endFill();
+        coreContainer.addChild(outerGlow);
+
+        // الطبقة الوسطى (الشبكة الذهبية الدوارة)
+        const goldMesh = new PIXI.Graphics();
+        goldMesh.lineStyle(2, 0xffd166, 0.8);
+        goldMesh.drawCircle(0, 0, 55);
+        goldMesh.moveTo(-35, -35); goldMesh.lineTo(35, 35);
+        goldMesh.moveTo(-35, 35); goldMesh.lineTo(35, -35);
+        coreContainer.addChild(goldMesh);
+
+        // الطبقة الداخلية (الجوهرة الزرقاء)
+        const innerCore = new PIXI.Graphics();
+        innerCore.beginFill(0x00d0ff, 0.9);
+        innerCore.drawCircle(0, 0, 40);
+        innerCore.endFill();
+        coreContainer.addChild(innerCore);
+
+        // تفاعل النقاط والنقر
+        coreContainer.on('pointerdown', () => {
             score += 15;
             sound.play();
-            document.getElementById('score-text').innerText = 'النقاط: ' + score;
+            document.getElementById('score-text').innerText = score;
             document.getElementById('lb-score').innerText = score;
             
-            gameObj.scale.set(1.2);
-            setTimeout(() => gameObj.scale.set(1), 100);
+            coreContainer.scale.set(1.12);
+            setTimeout(() => coreContainer.scale.set(1), 100);
+
+            const flyingText = document.getElementById('flying-text');
+            flyingText.style.opacity = '1';
+            flyingText.style.transform = 'translateY(-15px)';
+            setTimeout(() => {
+                flyingText.style.opacity = '0';
+                flyingText.style.transform = 'translateY(0)';
+            }, 250);
         });
 
         app.ticker.add((delta) => {
-            circle.rotation += 0.02 * delta;
+            goldMesh.rotation += 0.02 * delta;
         });
 
-        // اتصال Socket.io بالشات الحي
         const socket = io();
-
         socket.on('chat_message', (data) => {
             const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML += `<div class="leading-relaxed"><span class="text-indigo-400 font-semibold">${data.username}:</span> ${data.message}</div>`;
+            chatBox.innerHTML += `<div class="text-slate-200"><span class="font-semibold text-indigo-400">${data.username}:</span> ${data.text}</div>`;
             chatBox.scrollTop = chatBox.scrollHeight;
         });
 
         function sendMsg() {
             const input = document.getElementById('chat-input');
             if (!input.value.trim()) return;
-            socket.emit('chat_message', { username: 'مخلد (المطور)', message: input.value });
-            input.value = '';
-        }
-    </script>
-</body>
-</html>        }
-        initGame();
-
-        // اتصال Socket.io الفعلي بالسيرفر
-        const socket = io();
-
-        socket.on('chat_message', (data) => {
-            const chatBox = document.getElementById('chat-messages');
-            chatBox.innerHTML += `<div class="leading-relaxed"><span class="text-indigo-400 font-semibold">${data.user}:</span> ${data.text}</div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
-        });
-
-        function sendMsg() {
-            const input = document.getElementById('chat-input');
-            if(!input.value.trim()) return;
-            
-            socket.emit('chat_message', { user: 'مخلد (المطور)', text: input.value });
+            socket.emit('chat_message', { username: 'مخلد', text: input.value });
             input.value = '';
         }
     </script>
