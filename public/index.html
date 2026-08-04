@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>Skull Realms - المنصة الحية</title>
+    <title>Skull Realms</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -16,7 +16,6 @@
             --neon-purple: #8a3cff;
             --lux-gold: #ffd166;
             --glass-veil: rgba(255,255,255,0.04);
-            --accent-emerald: #0ea5a4;
         }
         body { font-family: 'Cairo', sans-serif; background-color: var(--bg-900); }
         .font-orbitron { font-family: 'Orbitron', sans-serif; }
@@ -33,19 +32,16 @@
 </head>
 <body class="text-white p-3 max-w-md mx-auto min-h-screen flex flex-col justify-between select-none overflow-hidden">
     
-    <!-- الشريط العلوي الرفيع -->
+    <!-- الشريط العلوي -->
     <header class="flex items-center justify-between text-xs mb-3 px-1">
-        <button class="text-yellow-400 flex items-center gap-1">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-            الإعدادات
-        </button>
-        <span class="text-yellow-500 font-orbitron tracking-wider">المرحلة 3</span>
+        <button class="text-yellow-400 flex items-center gap-1">⚙️ الإعدادات</button>
+        <span class="text-yellow-500 font-orbitron tracking-wider">Skull Realms</span>
         <span class="text-cyan-400 flex items-center gap-1.5">
             <span class="relative flex h-2 w-2">
                 <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
                 <span class="relative inline-flex rounded-full h-2 w-2 bg-cyan-400"></span>
             </span>
-            <span id="player-count">142</span> متصلاً
+            <span id="player-count">1</span> متصل
         </span>
     </header>
 
@@ -71,7 +67,7 @@
             <div class="bg-slate-900/70 p-2 rounded-xl border border-slate-800 flex items-center justify-end gap-2">
                 <div class="text-right">
                     <div class="text-[10px] text-slate-400">الرتبة</div>
-                    <div class="text-sm font-bold text-white">مبتدئ</div>
+                    <div class="text-sm font-bold text-white">لاعب</div>
                 </div>
                 <span class="text-lg">⚔️</span>
             </div>
@@ -80,36 +76,28 @@
         <!-- المنطقة المركزية (النواة النيونية) -->
         <div class="flex-1 flex items-center justify-center relative min-h-[220px]">
             <div id="flying-text" class="absolute font-orbitron font-bold text-lg text-yellow-300 opacity-0 transition-all duration-300 z-20 pointer-events-none">+15</div>
-            <div id="game-container" class="w-[240px] h-[240px] rounded-full relative overflow-hidden border-2 border-slate-800 flex items-center justify-center">
-                <div class="absolute bottom-4 left-1/2 -translate-x-1/2 w-1/2 h-1.5 bg-slate-800 rounded-full overflow-hidden z-10">
-                    <div id="click-power-bar" class="h-full bg-gradient-to-r from-teal-400 to-emerald-400 rounded-full w-[70%] transition-all"></div>
-                </div>
-            </div>
+            <div id="game-container" class="w-[240px] h-[240px] rounded-full relative overflow-hidden border-2 border-slate-800 flex items-center justify-center"></div>
         </div>
 
-        <!-- لوحة المتصدرين والشات -->
+        <!-- لوحة المتصدرين والشات (بدون أسماء وهمية) -->
         <div class="grid grid-cols-5 gap-3 h-[130px]">
             <div class="col-span-2 bg-slate-900 rounded-2xl p-2.5 border border-slate-800 shadow-xl overflow-hidden">
                 <h3 class="text-xs font-bold text-yellow-400 mb-1.5 font-orbitron">🏆 القمة</h3>
-                <div class="text-xs space-y-1 text-slate-300">
+                <div id="leaderboard-box" class="text-xs space-y-1 text-slate-300">
                     <div class="flex justify-between items-center bg-slate-950/60 p-1.5 rounded-lg border border-slate-800/60">
-                        <span class="font-medium text-white truncate">أنت (مخلد)</span>
+                        <span class="font-medium text-white truncate">أنت</span>
                         <span id="lb-score" class="text-yellow-400 font-bold font-orbitron">0</span>
-                    </div>
-                    <div class="flex justify-between items-center p-1.5 text-slate-400">
-                        <span>المحترف</span>
-                        <span class="font-orbitron">450</span>
                     </div>
                 </div>
             </div>
 
             <div class="col-span-3 bg-slate-900 rounded-2xl p-2.5 border border-slate-800 shadow-xl flex flex-col">
-                <h3 class="text-xs font-bold text-slate-300 mb-1 font-orbitron">💬 الشات</h3>
+                <h3 class="text-xs font-bold text-slate-300 mb-1 font-orbitron">💬 الشات المباشر</h3>
                 <div id="chat-messages" class="flex-1 overflow-y-auto text-xs space-y-1 bg-slate-950/80 p-2 rounded-xl border border-slate-800/60 mb-1.5">
-                    <div class="text-teal-400"><span class="font-semibold text-indigo-400">النظام:</span> متصل بالسيرفر!</div>
+                    <div class="text-teal-400"><span class="font-semibold text-indigo-400">النظام:</span> أهلاً بك في الساحة!</div>
                 </div>
                 <div class="flex gap-1">
-                    <input type="text" id="chat-input" placeholder="رسالة..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
+                    <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-2 py-1 text-xs text-white focus:outline-none focus:border-indigo-500">
                     <button onclick="sendMsg()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1 rounded-xl text-xs font-bold text-white transition">إرسال</button>
                 </div>
             </div>
@@ -146,14 +134,14 @@
         coreContainer.cursor = 'pointer';
         app.stage.addChild(coreContainer);
 
-        // الطبقة الخارجية (وهج نيون)
+        // الطبقة الخارجية
         const outerGlow = new PIXI.Graphics();
         outerGlow.beginFill(0x8a3cff, 0.15);
         outerGlow.drawCircle(0, 0, 75);
         outerGlow.endFill();
         coreContainer.addChild(outerGlow);
 
-        // الطبقة الوسطى (الشبكة الذهبية الدوارة)
+        // الطبقة الوسطى (العجلة الدوارة)
         const goldMesh = new PIXI.Graphics();
         goldMesh.lineStyle(2, 0xffd166, 0.8);
         goldMesh.drawCircle(0, 0, 55);
@@ -161,14 +149,14 @@
         goldMesh.moveTo(-35, 35); goldMesh.lineTo(35, -35);
         coreContainer.addChild(goldMesh);
 
-        // الطبقة الداخلية (الجوهرة الزرقاء)
+        // الطبقة الداخلية
         const innerCore = new PIXI.Graphics();
         innerCore.beginFill(0x00d0ff, 0.9);
         innerCore.drawCircle(0, 0, 40);
         innerCore.endFill();
         coreContainer.addChild(innerCore);
 
-        // تفاعل النقاط والنقر
+        // تفاعل النقر
         coreContainer.on('pointerdown', () => {
             score += 15;
             sound.play();
@@ -201,7 +189,7 @@
         function sendMsg() {
             const input = document.getElementById('chat-input');
             if (!input.value.trim()) return;
-            socket.emit('chat_message', { username: 'مخلد', text: input.value });
+            socket.emit('chat_message', { username: 'زائر', text: input.value });
             input.value = '';
         }
     </script>
