@@ -2,40 +2,42 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>Skull Realms - منصة الألعاب</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- PixiJS للعبة -->
+    <!-- PixiJS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
-    <!-- Howler.js للأصوات -->
+    <!-- Howler.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-    <!-- Socket.io للربط المباشر بالسيرفر -->
+    <!-- Socket.io -->
     <script src="/socket.io/socket.io.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Cairo', sans-serif; }
+    </style>
 </head>
 <body class="bg-slate-950 text-white font-sans p-3 max-w-md mx-auto min-h-screen flex flex-col justify-between select-none">
-
-    <!-- الهيدر العلوي مع زر قناتك المحدث -->
-    <header class="flex justify-between items-center bg-slate-900 p-3.5 rounded-2xl mb-3 border border-slate-800 shadow-xl">
+    <!-- الهيدر العلوي مع زر قناة المحدث -->
+    <header class="bg-slate-900 p-3 rounded-2xl mb-3 flex items-center justify-between">
         <div class="flex items-center space-x-2 space-x-reverse">
             <span class="text-xl">💀</span>
             <h1 class="font-black text-yellow-400 text-sm">Skull Realms</h1>
         </div>
-        <a href="https://www.youtube.com/@مخلدالعنزي-خ5ظ" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl border border-slate-700 text-slate-300 transition font-medium flex items-center gap-1">
+        <a href="https://www.youtube.com/@مخلدالمنزي-ط5" target="_blank" class="text-xs bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded-xl text-slate-200 flex items-center gap-1">
             <span>قناتي</span> 🔗
         </a>
     </header>
 
     <!-- المحتوى الرئيسي -->
     <div class="space-y-3 flex-1 flex flex-col">
-        
         <!-- ساحة اللعبة -->
         <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-xl">
-            <div class="text-xs text-slate-400 mb-2 flex justify-between items-center font-medium">
-                <span>🎮 اضغط على الجمجمة للجمع</span>
-                <span id="score-text" class="text-yellow-400 font-bold bg-yellow-500/10 px-2 py-0.5 rounded-lg border border-yellow-500/20">النقاط: 0</span>
+            <div class="flex justify-between items-center bg-slate-900/60 p-2 rounded-xl border border-slate-800/60 mb-2">
+                <span class="text-xs">🎮 اضغط على الجمجمة للجمع</span>
+                <span id="score-text" class="text-yellow-400 font-bold">النقاط: 0</span>
             </div>
-            <div id="game-container" class="w-full h-[190px] bg-black/70 rounded-xl flex items-center justify-center cursor-pointer border border-slate-800/50 shadow-inner overflow-hidden relative"></div>
+            <div id="game-container" class="w-full h-[190px] bg-black/70 rounded-xl flex items-center justify-center overflow-hidden relative"></div>
         </div>
 
         <!-- قائمة المتصدرين -->
@@ -46,8 +48,8 @@
                     <span class="text-slate-200 font-medium">1. أنت (مخلد)</span>
                     <span id="lb-score" class="text-yellow-400 font-bold">0</span>
                 </div>
-                <div class="flex justify-between items-center bg-slate-950/30 p-2 rounded-xl border border-slate-800/30 text-slate-400">
-                    <span>2. اللاعب المحترف</span>
+                <div class="flex justify-between items-center bg-slate-950/30 p-2 rounded-xl border border-slate-800/30">
+                    <span class="text-slate-200">2. اللاعب المحترف</span>
                     <span>450</span>
                 </div>
             </div>
@@ -56,20 +58,19 @@
         <!-- الشات الحي المتصل بالسيرفر -->
         <div class="bg-slate-900 rounded-2xl p-3 border border-slate-800 shadow-xl flex flex-col h-[140px]">
             <h3 class="text-xs font-bold text-slate-300 mb-1.5">💬 الشات المباشر</h3>
-            <div id="chat-messages" class="flex-1 overflow-y-auto text-xs space-y-1 bg-slate-950/80 p-2 rounded-xl mb-2 text-slate-300 border border-slate-800/60">
+            <div id="chat-messages" class="flex-1 overflow-y-auto text-xs space-y-1 bg-slate-950/80 p-2 rounded-xl border border-slate-800/60 mb-2">
                 <div class="text-indigo-400 font-medium">النظام: متصل بالسيرفر بنجاح!</div>
             </div>
             <div class="flex gap-1.5">
                 <input type="text" id="chat-input" placeholder="اكتب رسالة..." class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500">
-                <button onclick="sendMsg()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-xl text-xs font-bold transition">إرسال</button>
+                <button onclick="sendMsg()" class="bg-indigo-600 hover:bg-indigo-500 px-4 py-1.5 rounded-xl text-xs font-bold text-white transition">إرسال</button>
             </div>
         </div>
 
         <!-- زر دعم المطور -->
-        <a href="https://paypal.me/MkledAnze900" target="_blank" class="block w-full text-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 text-white font-bold py-3 rounded-2xl text-xs transition shadow-lg shadow-emerald-900/30 border border-emerald-500/30">
+        <a href="https://paypal.me/MkledAnze900" target="_blank" class="block w-full text-center bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold py-3 px-4 rounded-2xl text-sm shadow-lg transition">
             💳 دعم المطور (تبرع)
         </a>
-
     </div>
 
     <!-- كود اللعبة والاتصال -->
@@ -77,39 +78,60 @@
         const sound = new Howl({ src: ['https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3'], volume: 0.5 });
         let score = 0;
 
-        // تشغيل PixiJS
-        const app = new PIXI.Application();
-        async function initGame() {
-            const containerElem = document.getElementById('game-container');
-            await app.init({ background: '#030712', width: containerElem.clientWidth, height: containerElem.clientHeight });
-            containerElem.appendChild(app.canvas);
+        // تشغيل PixiJS (متوافق مع إصدار 7.3.2)
+        const containerElem = document.getElementById('game-container');
+        const app = new PIXI.Application({
+            background: '#030712',
+            width: containerElem.clientWidth,
+            height: containerElem.clientHeight
+        });
+        containerElem.appendChild(app.view);
 
-            const circle = new PIXI.Graphics();
-            circle.circle(0, 0, 40);
-            circle.fill(0xeab308);
+        const gameObj = new PIXI.Container();
+        const circle = new PIXI.Graphics();
+        circle.beginFill(0xeab308);
+        circle.drawCircle(0, 0, 40);
+        circle.endFill();
+        
+        gameObj.addChild(circle);
+        gameObj.x = app.screen.width / 2;
+        gameObj.y = app.screen.height / 2;
+        gameObj.interactive = true;
+        gameObj.cursor = 'pointer';
+        app.stage.addChild(gameObj);
 
-            const gameObj = new PIXI.Container();
-            gameObj.addChild(circle);
-            gameObj.x = app.screen.width / 2;
-            gameObj.y = app.screen.height / 2;
-            gameObj.interactive = true;
-            gameObj.cursor = 'pointer';
-            app.stage.addChild(gameObj);
+        gameObj.on('pointerdown', () => {
+            score += 15;
+            sound.play();
+            document.getElementById('score-text').innerText = 'النقاط: ' + score;
+            document.getElementById('lb-score').innerText = score;
+            
+            gameObj.scale.set(1.2);
+            setTimeout(() => gameObj.scale.set(1), 100);
+        });
 
-            gameObj.on('pointerdown', () => {
-                score += 15;
-                sound.play();
-                document.getElementById('score-text').innerText = 'النقاط: ' + score;
-                document.getElementById('lb-score').innerText = score;
+        app.ticker.add((delta) => {
+            circle.rotation += 0.02 * delta;
+        });
 
-                gameObj.scale.set(1.2);
-                setTimeout(() => gameObj.scale.set(1), 100);
-            });
+        // اتصال Socket.io بالشات الحي
+        const socket = io();
 
-            app.ticker.add((delta) => {
-                circle.rotation += 0.02 * delta.deltaTime;
-            });
+        socket.on('chat_message', (data) => {
+            const chatBox = document.getElementById('chat-messages');
+            chatBox.innerHTML += `<div class="leading-relaxed"><span class="text-indigo-400 font-semibold">${data.username}:</span> ${data.message}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        });
+
+        function sendMsg() {
+            const input = document.getElementById('chat-input');
+            if (!input.value.trim()) return;
+            socket.emit('chat_message', { username: 'مخلد (المطور)', message: input.value });
+            input.value = '';
         }
+    </script>
+</body>
+</html>        }
         initGame();
 
         // اتصال Socket.io الفعلي بالسيرفر
