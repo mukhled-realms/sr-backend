@@ -25,16 +25,16 @@
             box-shadow: 0 8px 40px rgba(0,208,255,0.05), inset 0 2px 12px rgba(255,209,102,0.02);
             backdrop-filter: blur(6px);
         }
-        #chat-messages::-webkit-scrollbar { width: 6px; }
-        #chat-messages::-webkit-scrollbar-track { background: transparent; }
-        #chat-messages::-webkit-scrollbar-thumb { background: var(--glass-veil); border-radius: 3px; }
+        #chat-messages::-webkit-scrollbar, #settings-scroll::-webkit-scrollbar { width: 6px; }
+        #chat-messages::-webkit-scrollbar-track, #settings-scroll::-webkit-scrollbar-track { background: transparent; }
+        #chat-messages::-webkit-scrollbar-thumb, #settings-scroll::-webkit-scrollbar-thumb { background: var(--glass-veil); border-radius: 3px; }
     </style>
 </head>
 <body class="text-white p-3 max-w-md mx-auto min-h-screen flex flex-col justify-between select-none overflow-hidden">
     
     <!-- الشريط العلوي -->
     <header class="flex items-center justify-between text-xs mb-3 px-1">
-        <button class="text-yellow-400 flex items-center gap-1">⚙️ الإعدادات</button>
+        <button onclick="openSettings()" class="text-yellow-400 hover:text-yellow-300 transition flex items-center gap-1 font-orbitron">⚙️ الإعدادات</button>
         <span class="text-yellow-500 font-orbitron tracking-wider">Skull Realms</span>
         <span class="text-cyan-400 flex items-center gap-1.5">
             <span class="relative flex h-2 w-2">
@@ -79,7 +79,7 @@
             <div id="game-container" class="w-[240px] h-[240px] rounded-full relative overflow-hidden border-2 border-slate-800 flex items-center justify-center"></div>
         </div>
 
-        <!-- لوحة المتصدرين والشات (بدون أسماء وهمية) -->
+        <!-- لوحة المتصدرين والشات -->
         <div class="grid grid-cols-5 gap-3 h-[130px]">
             <div class="col-span-2 bg-slate-900 rounded-2xl p-2.5 border border-slate-800 shadow-xl overflow-hidden">
                 <h3 class="text-xs font-bold text-yellow-400 mb-1.5 font-orbitron">🏆 القمة</h3>
@@ -103,11 +103,56 @@
             </div>
         </div>
 
-        <!-- زر دعم المطور -->
+        <!-- زر دعم المطور الرئيسي -->
         <a href="https://paypal.me/MkledAnze900" target="_blank" class="block w-full text-center bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white font-bold py-2.5 px-4 rounded-2xl text-xs shadow-lg transition font-orbitron tracking-wider flex items-center justify-center gap-2">
             💳 دعم المطور (تبرع)
         </a>
     </main>
+
+    <!-- نافذة الإعدادات المنبثقة (Command Center) -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="w-full max-w-sm bg-black/90 border border-yellow-500/20 rounded-2xl p-6 relative shadow-2xl">
+            
+            <!-- زر الإغلاق -->
+            <button onclick="closeSettings()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl font-light">✕</button>
+
+            <!-- المحتوى -->
+            <div id="settings-scroll" class="flex flex-col gap-5 max-h-[80vh] overflow-y-auto pr-1">
+                
+                <!-- 1. لوحة الصدارة -->
+                <div>
+                    <h3 class="text-yellow-500/80 text-xs font-bold tracking-widest mb-2 uppercase border-b border-white/5 pb-1 font-orbitron">🏆 أفضل اللاعبين</h3>
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between text-gray-300 bg-white/5 p-2 rounded-lg"><span>1. أنت</span><span id="modal-score" class="text-yellow-500 font-orbitron">0</span></div>
+                    </div>
+                </div>
+
+                <!-- 2. قاعة الشرف -->
+                <div>
+                    <h3 class="text-yellow-500/80 text-xs font-bold tracking-widest mb-2 uppercase border-b border-white/5 pb-1 font-orbitron">✨ قاعة الشرف</h3>
+                    <div id="supporters-list" class="flex flex-wrap gap-2 text-[10px]">
+                        <span class="text-gray-400 italic">قريباً مع أول داعم...</span>
+                    </div>
+                </div>
+
+                <!-- 3. الإعدادات السريعة -->
+                <div class="flex flex-col gap-2 mt-2 pt-3 border-t border-white/5">
+                    <button onclick="toggleSound()" class="flex justify-between items-center w-full py-2 px-3 bg-white/5 rounded-xl hover:bg-white/10 transition">
+                        <span class="text-xs">🔊 الصوت</span>
+                        <span id="sound-status" class="text-xs text-green-400">مفعل</span>
+                    </button>
+                    <button onclick="resetGame()" class="flex justify-between items-center w-full py-2 px-3 bg-white/5 rounded-xl hover:bg-white/10 transition">
+                        <span class="text-xs">🔄 إعادة ضبط النقاط</span>
+                        <span class="text-red-400/50 text-[10px]">تصفير</span>
+                    </button>
+                    <a href="https://paypal.me/MkledAnze900" target="_blank" class="block text-center mt-2 bg-gradient-to-r from-amber-600 to-yellow-600 hover:opacity-90 py-2.5 rounded-xl font-bold text-xs text-black uppercase shadow-lg shadow-amber-900/20 transition font-orbitron">
+                        💳 دعم المطور (تبرع)
+                    </a>
+                </div>
+
+            </div>
+        </div>
+    </div>
 
     <script>
         const sound = new Howl({ 
@@ -116,6 +161,31 @@
         });
         
         let score = 0;
+        let soundEnabled = true;
+
+        // دوال نافذة الإعدادات
+        function openSettings() {
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            sound.mute(!soundEnabled);
+            const statusEl = document.getElementById('sound-status');
+            statusEl.innerText = soundEnabled ? 'مفعل' : 'معطل';
+            statusEl.className = soundEnabled ? 'text-xs text-green-400' : 'text-xs text-red-400';
+        }
+        function resetGame() {
+            if(confirm('هل أنت متأكد من تصفير النقاط؟')) {
+                score = 0;
+                document.getElementById('score-text').innerText = score;
+                document.getElementById('lb-score').innerText = score;
+                document.getElementById('modal-score').innerText = score;
+                closeSettings();
+            }
+        }
 
         const containerElem = document.getElementById('game-container');
         const app = new PIXI.Application({
@@ -141,7 +211,7 @@
         outerGlow.endFill();
         coreContainer.addChild(outerGlow);
 
-        // الطبقة الوسطى (العجلة الدوارة)
+        // الطبقة الوسطى (العجلة الذهبية الدوارة)
         const goldMesh = new PIXI.Graphics();
         goldMesh.lineStyle(2, 0xffd166, 0.8);
         goldMesh.drawCircle(0, 0, 55);
@@ -159,9 +229,10 @@
         // تفاعل النقر
         coreContainer.on('pointerdown', () => {
             score += 15;
-            sound.play();
+            if(soundEnabled) sound.play();
             document.getElementById('score-text').innerText = score;
             document.getElementById('lb-score').innerText = score;
+            document.getElementById('modal-score').innerText = score;
             
             coreContainer.scale.set(1.12);
             setTimeout(() => coreContainer.scale.set(1), 100);
