@@ -1,71 +1,136 @@
 const express = require('express');
-const paypal = require('@paypal/checkout-server-sdk');
-const db = require('../db/index');
 const router = express.Router();
+const axios = require('axios');
+const db = require('../db');
+const { io } = require('../server');
 
-// إعداد بيئة PayPal (استخدم Sandbox للاختبار)
-const environment = new paypal.core.SandboxEnvironment(
-  process.env.PAYPAL_CLIENT_ID,
-  process.env.PAYPAL_SECRET
-);
-const client = new paypal.core.PayPalHttpClient(environment);
+// بيانات باي بال من المتغيرات البيئية
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID;
+const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
 
-// 1. إنشاء طلب دفع
-router.post('/create-paypal-order', async (req, res) => {
-  const { amount } = req.body;
+// رابط API الرسمي
+const PAYPAL_API = "https://api-m.paypal.com"; // استخدم sandbox إذا كنت تختبر
 
-  const request = new paypal.orders.OrdersCreateRequest();
-  request.prefer('return=representation');
-  request.requestBody({
-    intent: 'CAPTURE',
-    purchase_units: [{
-      amount: {
-        currency_code: 'USD',
-        value: amount
-      }
-    }]
-  });
+// 1) إنشاء توكن للوصول
+async function getAccessToken() {
+    const auth = Buffer.from(`${PAYPAL_CLIENT_ID}:${PAYPAL_SECRET}`).toString("base64");
 
-  try {
-    const order = await client.execute(request);
-    res.json({ id: order.result.id });
-  } catch (err) {
-    res.status(500).json({ error: 'فشل إنشاء طلب الدفع' });
-  }
+    const response = await axios.post(
+        `${PAYPAL_API}/v1/oauth2/token`,
+        "grant_type=client_credentials",
+        {
+            headers: {
+                "Authorization": `Basic ${auth}`,
+                "Content-Type": "application/x-www-form-urlencoded"
+            }
+        }
+    );
+
+    return response.data.access_token;
+}
+
+// 2) إنشاء عملية دفع جديدة
+router.post('/create-order', async (req, res) => {
+    try {
+        const { amount, description, userId } = req.body;
+
+        const accessToken = await getAccessToken();
+
+        const response = await axios.post(
+            `${PAYPAL_API}/v2/checkout/orders`,
+            {
+                intent: "CAPTURE",
+                purchase_units: [
+                    {
+                        amount: {
+                            currency_code: "USD",
+                            value: amount
+                        },
+                        description,
+                        custom_id: userId
+                    }
+                ]
+            },
+            {
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        res.json({ ok: true, orderId: response.data.id });
+    } catch (err) {
+        console.error("PayPal Create Order Error:", err.response?.data || err);
+        res.status(500).json({ ok: false });
+    }
 });
 
-// 2. تأكيد الدفع (Capture)
-router.post('/capture-paypal-order', async (req, res) => {
-  const { orderID } = req.body;
+// 3) تنفيذ عملية الدفع (Capture)
+router.post('/capture-order', async (req, res) => {
+    try {
+        const { orderId } = req.body;
 
-  const request = new paypal.orders.OrdersCaptureRequest(orderID);
-  request.requestBody({});
+        const accessToken = await getAccessToken();
 
-  try {
-    const capture = await client.execute(request);
-    res.json({ status: 'success', details: capture.result });
-  } catch (err) {
-    res.status(500).json({ error: 'فشل تأكيد الدفع' });
-  }
+        const response = await axios.post(
+            `${PAYPAL_API}/v2/checkout/orders/${orderId}/capture`,
+            {},
+            {
+                headers: {
+                    "Authorization": `Bearer ${accessToken}`,
+                    "Content-Type": "application/json"
+                }
+            }
+        );
+
+        const capture = response.data.purchase_units[0].payments.captures[0];
+        const amount = capture.amount.value;
+        const userId = response.data.purchase_units[0].custom_id;
+
+        // VIP Ultra إذا دفع 2000+
+        if (Number(amount) >= 2000) {
+            await db.setUserVipLevel(userId, 2);
+
+            io.emit('vip-entered', {
+                userId,
+                level: 2,
+                message: "⚡ ULTRA SUPPORTER ENTERED ⚡"
+            });
+        }
+
+        res.json({ ok: true, capture });
+    } catch (err) {
+        console.error("PayPal Capture Error:", err.response?.data || err);
+        res.status(500).json({ ok: false });
+    }
 });
 
-// 3. Webhook لاستقبال تأكيد الدفع من PayPal
-router.post('/webhook', (req, res) => {
-  const event = req.body;
-  console.log('Webhook Received:', event.event_type);
-  if (event.event_type === 'PAYMENT.CAPTURE.COMPLETED') {
-    const userId = event.resource.custom_id;
-    const amount = parseFloat(event.resource.amount.value);
-    if (!userId) return res.status(200).send('No User ID');
-    const diamondsToAdd = Math.floor(amount * 100);
-    db.run(`UPDATE users SET diamonds = diamonds + ? WHERE id = ?`, [diamondsToAdd, userId], function(err) {
-      if (err) return res.status(500).send('DB Error');
-      console.log(`Added ${diamondsToAdd} diamonds to ${userId}`);
-      res.status(200).send('Webhook processed');
-    });
-  } else {
-    res.status(200).send('Event ignored');
-  }
+// 4) Webhook لمعالجة الدفع من باي بال
+router.post('/webhook', async (req, res) => {
+    try {
+        const event = req.body;
+
+        if (event.event_type === "PAYMENT.CAPTURE.COMPLETED") {
+            const userId = event.resource.custom_id;
+            const amount = event.resource.amount.value;
+
+            if (Number(amount) >= 2000) {
+                await db.setUserVipLevel(userId, 2);
+
+                io.emit('vip-entered', {
+                    userId,
+                    level: 2,
+                    message: "⚡ ULTRA SUPPORTER ENTERED ⚡"
+                });
+            }
+        }
+
+        res.sendStatus(200);
+    } catch (err) {
+        console.error("Webhook Error:", err);
+        res.sendStatus(500);
+    }
 });
 
 module.exports = router;
