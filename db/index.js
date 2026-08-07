@@ -17,7 +17,7 @@ db.serialize(() => {
             points INTEGER DEFAULT 0,
             vip_level INTEGER DEFAULT 0,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-        )
+        );
     `);
 });
 
@@ -25,7 +25,7 @@ db.serialize(() => {
 function updateUserPoints(userId, deltaPoints) {
     return new Promise((resolve, reject) => {
         db.run(
-            `UPDATE users SET points = points + ? WHERE id = ?`,
+            `UPDATE users SET points = points + ? WHERE id = ?;`,
             [deltaPoints, userId],
             function (err) {
                 if (err) return reject(err);
@@ -39,7 +39,7 @@ function updateUserPoints(userId, deltaPoints) {
 function setUserVipLevel(userId, level) {
     return new Promise((resolve, reject) => {
         db.run(
-            `UPDATE users SET vip_level = ? WHERE id = ?`,
+            `UPDATE users SET vip_level = ? WHERE id = ?;`,
             [level, userId],
             function (err) {
                 if (err) return reject(err);
