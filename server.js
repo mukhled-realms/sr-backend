@@ -2,34 +2,49 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+const path = require('path');
+require('dotenv').config();
+
+// استيراد مسارات الأنظمة القديمة
+const authRoutes = require('./routes/auth');
+const storeRoutes = require('./routes/store');
+const paymentRoutes = require('./routes/payment');
+
+// استيراد ملف إدارة السوكيت الجديد (سنقوم بإنشائه بعد قليل)
+const setupGameSocket = require('./sockets/gameSocket');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  cors: {
+
+// إعدادات CORS وقراءة البيانات
+app.use(cors({
     origin: "*",
     methods: ["GET", "POST"]
-  }
-});
-
-app.use(cors());
+}));
 app.use(express.json());
-app.use(express.static('public'));
 
-// الشات الحي والاتصال المباشر
-io.on('connection', (socket) => {
-  console.log('🟢 لاعب متصل:', socket.id);
+// ربط مسارات API الخلفية
+app.use('/api/auth', authRoutes);
+app.use('/api/store', storeRoutes);
+app.use('/api/payment', paymentRoutes);
 
-  socket.on('chat_message', (data) => {
-    io.emit('chat_message', data);
-  });
+// ربط مجلد الواجهة الأمامية (سنقوم بإنشاء هذا المجلد قريبًا)
+// ملاحظة: وضعنا الواجهة داخل مجلد public لتسهيل النشر
+app.use(express.static(path.join(__dirname, 'public/frontend')));
 
-  socket.on('disconnect', () => {
-    console.log('🔴 لاعب انقطع:', socket.id);
-  });
+// إعدادات Socket.io
+const io = new Server(server, { 
+    cors: { 
+        origin: "*",
+        methods: ["GET", "POST"]
+    } 
 });
 
+// تفعيل أنظمة السوكيت الجديدة للألعاب
+setupGameSocket(io);
+
+// تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Skull Realms يعمل بكفاءة على المنفذ ${PORT}`);
+    console.log(`✅ Skull Realms Server running on port ${PORT}`);
 });
