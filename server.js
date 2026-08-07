@@ -8,43 +8,37 @@ require('dotenv').config();
 // استيراد مسارات الأنظمة القديمة
 const authRoutes = require('./routes/auth');
 const storeRoutes = require('./routes/store');
-const paymentRoutes = require('./routes/payment');
 
-// استيراد ملف إدارة السوكيت الجديد (سنقوم بإنشائه بعد قليل)
-const setupGameSocket = require('./sockets/gameSocket');
+// استيراد مسار الدفع الجديد (الذي سننشئه بعد قليل)
+const paymentRoutes = require('./payment');
+const { initGameSocket } = require('./sockets/gameSocket');
 
 const app = express();
 const server = http.createServer(app);
 
 // إعدادات CORS وقراءة البيانات
-app.use(cors({
-    origin: "*",
-    methods: ["GET", "POST"]
-}));
+app.use(cors({ origin: "*", methods: ["GET", "POST"] }));
 app.use(express.json());
 
-// ربط مسارات API الخلفية
+// ربط المسارات
 app.use('/api/auth', authRoutes);
 app.use('/api/store', storeRoutes);
 app.use('/api/payment', paymentRoutes);
 
-// ربط مجلد الواجهة الأمامية (سنقوم بإنشاء هذا المجلد قريبًا)
-// ملاحظة: وضعنا الواجهة داخل مجلد public لتسهيل النشر
+// ربط الواجهة الأمامية
 app.use(express.static(path.join(__dirname, 'public/frontend')));
 
 // إعدادات Socket.io
-const io = new Server(server, { 
-    cors: { 
-        origin: "*",
-        methods: ["GET", "POST"]
-    } 
-});
+const io = new Server(server, { cors: { origin: "*" } });
 
-// تفعيل أنظمة السوكيت الجديدة للألعاب
-setupGameSocket(io);
+// تصدير io لاستخدامه في ملفات أخرى (مهم جداً عشان الدفع يشتغل)
+module.exports.io = io;
+
+// تفعيل أنظمة السوكيت
+initGameSocket(io);
 
 // تشغيل السيرفر
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`✅ Skull Realms Server running on port ${PORT}`);
+    console.log(`💰 Skull Realms Ready for Money on port ${PORT}`);
 });
