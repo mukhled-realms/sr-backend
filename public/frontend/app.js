@@ -1,9 +1,15 @@
+// --- 0. إصلاح الشاشة السوداء (السطر السحري) ---
+document.body.style.backgroundColor = "#0a0a0c";
+document.body.offsetHeight; // إجبار المتصفح على إعادة الرسم فوراً
+
+// --- 1. إعداد الصوتيات (Howler.js) ---
 const sounds = {
     pickup: new Howl({ src: ['/assets/sounds/pickup.mp3'], volume: 0.5 }),
     vipEntry: new Howl({ src: ['/assets/sounds/vip-fanfare.mp3'], volume: 0.8 }),
     oracle: new Howl({ src: ['/assets/sounds/whisper.mp3'], volume: 0.4, rate: 0.8 })
 };
 
+// --- 2. نظام الجزيئات ---
 class ParticleSystem {
     constructor(container) {
         this.container = container;
@@ -38,8 +44,10 @@ class ParticleSystem {
     }
 }
 
+// --- 3. الاتصال بالسيرفر (متوافق مع Render) ---
 const socket = io(window.location.origin);
 
+// --- 4. إعداد PixiJS ---
 const app = new PIXI.Application({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -48,7 +56,7 @@ const app = new PIXI.Application({
 });
 document.getElementById('game-container').appendChild(app.view);
 
-// هذا السطر هو حل المشكلة (إجبار الخلفية على الظهور)
+// إصلاح إضافي للشاشة السوداء
 app.renderer.backgroundColor = 0x0a0a0c;
 
 const skullsContainer = new PIXI.Container();
@@ -58,6 +66,7 @@ const skulls = {};
 const particles = new ParticleSystem(app.stage);
 app.ticker.add(() => particles.update());
 
+// --- 5. رسم الجمجمة المتوهجة ---
 function createSkull(id, x, y) {
     const container = new PIXI.Container();
 
@@ -93,6 +102,7 @@ function createSkull(id, x, y) {
     skulls[id] = container;
 }
 
+// --- 6. تأثير الكتابة (Typewriter) ---
 function typeWriterEffect(text, element) {
     element.innerHTML = '';
     let i = 0;
@@ -107,6 +117,7 @@ function typeWriterEffect(text, element) {
     type();
 }
 
+// --- 7. استقبال الأحداث ---
 socket.on('spawn-skull', (data) => createSkull(data.id, data.x, data.y));
 
 socket.on('remove-skull', (id) => {
@@ -177,6 +188,7 @@ socket.on('update-points', (amount) => {
     console.log(`حصلت على ${amount} نقطة!`);
 });
 
+// --- 8. تحديث الحجم ---
 window.addEventListener('resize', () => {
     app.renderer.resize(window.innerWidth, window.innerHeight);
 });
