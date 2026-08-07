@@ -2,6 +2,18 @@
 document.body.style.backgroundColor = "#0a0a0c";
 document.body.offsetHeight; // إجبار المتصفح على إعادة الرسم فوراً
 
+// --- موسيقى الخلفية ---
+const bgMusic = document.getElementById("bgMusic");
+bgMusic.volume = 0.25; // صوت منخفض
+bgMusic.play().catch(() => {
+    // بعض المتصفحات تمنع التشغيل التلقائي
+    document.body.addEventListener("click", () => bgMusic.play(), { once: true });
+});
+
+// --- موسيقى الأحداث ---
+const eventMusic = document.getElementById("eventMusic");
+eventMusic.volume = 0.35;
+
 // --- 1. إعداد الصوتيات (Howler.js) ---
 const sounds = {
     pickup: new Howl({ src: ['/assets/sounds/pickup.mp3'], volume: 0.5 }),
@@ -128,6 +140,9 @@ socket.on('remove-skull', (id) => {
 });
 
 socket.on('start-wave', (data) => {
+    eventMusic.play();
+    bgMusic.pause();
+
     const banner = new PIXI.Text(data.title, {
         fontFamily: 'Cinzel, serif',
         fontSize: 60,
@@ -140,7 +155,13 @@ socket.on('start-wave', (data) => {
     banner.x = app.screen.width / 2;
     banner.y = app.screen.height / 2;
     app.stage.addChild(banner);
-    setTimeout(() => app.stage.removeChild(banner), 3000);
+
+    setTimeout(() => {
+        app.stage.removeChild(banner);
+        eventMusic.pause();
+        eventMusic.currentTime = 0;
+        bgMusic.play();
+    }, 3000);
 });
 
 socket.on('new-chat', (data) => {
@@ -152,6 +173,9 @@ socket.on('new-chat', (data) => {
 });
 
 socket.on('vip-entered', (data) => {
+    eventMusic.play();
+    bgMusic.pause();
+    
     sounds.vipEntry.play();
     app.renderer.backgroundColor = 0xffd700;
 
@@ -171,6 +195,9 @@ socket.on('vip-entered', (data) => {
     setTimeout(() => {
         app.stage.removeChild(banner);
         app.renderer.backgroundColor = 0x0a0a0c;
+        eventMusic.pause();
+        eventMusic.currentTime = 0;
+        bgMusic.play();
     }, 6000);
 });
 
