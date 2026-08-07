@@ -1,11 +1,9 @@
-// --- 0. إعداد الصوتيات (Howler.js) ---
 const sounds = {
     pickup: new Howl({ src: ['/assets/sounds/pickup.mp3'], volume: 0.5 }),
     vipEntry: new Howl({ src: ['/assets/sounds/vip-fanfare.mp3'], volume: 0.8 }),
     oracle: new Howl({ src: ['/assets/sounds/whisper.mp3'], volume: 0.4, rate: 0.8 })
 };
 
-// --- 1. نظام الجزيئات ---
 class ParticleSystem {
     constructor(container) {
         this.container = container;
@@ -40,10 +38,8 @@ class ParticleSystem {
     }
 }
 
-// --- 2. الاتصال بالسيرفر (متوافق مع Render) ---
 const socket = io(window.location.origin);
 
-// --- 3. إعداد PixiJS ---
 const app = new PIXI.Application({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -52,6 +48,9 @@ const app = new PIXI.Application({
 });
 document.getElementById('game-container').appendChild(app.view);
 
+// هذا السطر هو حل المشكلة (إجبار الخلفية على الظهور)
+app.renderer.backgroundColor = 0x0a0a0c;
+
 const skullsContainer = new PIXI.Container();
 app.stage.addChild(skullsContainer);
 const skulls = {};
@@ -59,7 +58,6 @@ const skulls = {};
 const particles = new ParticleSystem(app.stage);
 app.ticker.add(() => particles.update());
 
-// --- 4. رسم الجمجمة المتوهجة ---
 function createSkull(id, x, y) {
     const container = new PIXI.Container();
 
@@ -95,7 +93,6 @@ function createSkull(id, x, y) {
     skulls[id] = container;
 }
 
-// --- 5. تأثير الكتابة (Typewriter) ---
 function typeWriterEffect(text, element) {
     element.innerHTML = '';
     let i = 0;
@@ -110,7 +107,6 @@ function typeWriterEffect(text, element) {
     type();
 }
 
-// --- 6. استقبال الأحداث ---
 socket.on('spawn-skull', (data) => createSkull(data.id, data.x, data.y));
 
 socket.on('remove-skull', (id) => {
@@ -181,7 +177,6 @@ socket.on('update-points', (amount) => {
     console.log(`حصلت على ${amount} نقطة!`);
 });
 
-// --- 7. تحديث الحجم ---
 window.addEventListener('resize', () => {
     app.renderer.resize(window.innerWidth, window.innerHeight);
 });
