@@ -4,30 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Skull Realms | Interactive Spectacle</title>
+    <!-- مكتبة PixiJS للرسم -->
     <script src="https://pixijs.download/release/pixi.js"></script>
+    <!-- مكتبة Socket.io للاتصال بالسيرفر -->
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
     <style>
-        /* Reset & Base */
+        /* تنسيقات السايبربانك الأساسية */
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
         body { background: #0f0c1b; color: #fff; overflow: hidden; height: 100vh; width: 100vw; position: relative; }
         
-        /* 1. TOP BAR (Realm Health + Wave) */
+        /* الشريط العلوي */
         #top-bar {
             position: absolute; top: 10px; left: 10px; right: 10px; height: 60px;
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(0, 0, 0, 0.7); border: 2px solid #ffcc00; border-radius: 12px; padding: 10px 20px;
-            z-index: 10; backdrop-filter: blur(5px);
+            z-index: 10; 
         }
         .health-section { display: flex; align-items: center; gap: 10px; flex: 1; }
         .health-bar-track { flex: 1; height: 12px; background: #333; border-radius: 20px; overflow: hidden; }
         .health-bar-fill { width: 100%; height: 100%; background: linear-gradient(90deg, #ff0055, #ffcc00); transition: width 0.5s ease; }
         .wave-section { display: flex; align-items: center; gap: 15px; font-weight: bold; color: #00e5ff; }
 
-        /* 2. CENTER STAGE (PixiJS) */
+        /* المسرح المركزي للعبة (PixiJS) */
         #game-container { position: absolute; inset: 0; z-index: 1; }
 
-        /* 3. LEFT WING (Voting) */
+        /* الجناح الأيسر (التصويت) */
         #left-wing {
             position: absolute; top: 80px; left: 10px; width: 50px; height: 300px;
             background: rgba(0, 0, 0, 0.7); border: 2px solid #00e5ff; border-radius: 25px;
@@ -37,7 +38,7 @@
         #vote-fill { width: 100%; height: 50%; background: #00e5ff; transition: height 0.3s; border-radius: 0 0 25px 25px; }
         #vote-label { position: absolute; top: 50%; transform: translateY(-50%); font-size: 12px; font-weight: bold; text-shadow: 0 0 10px #000; }
 
-        /* 4. RIGHT WING (Miracle Button) */
+        /* الجناح الأيمن (زر الدعم) */
         #right-wing {
             position: absolute; top: 80px; right: 10px; width: 100px; height: 300px;
             background: rgba(0, 0, 0, 0.7); border: 2px solid #ffd700; border-radius: 20px;
@@ -47,13 +48,12 @@
             width: 80px; height: 80px; border-radius: 50%; border: 3px solid #ff0055;
             background: linear-gradient(135deg, #ff0055, #8a2be2); color: white;
             font-size: 12px; font-weight: bold; cursor: pointer; box-shadow: 0 0 20px rgba(255, 0, 85, 0.5);
-            text-align: center; line-height: 1.2;
+            text-align: center; line-height: 1.2; text-decoration: none; display: flex; align-items: center; justify-content: center;
         }
-        #miracle-btn:active { transform: scale(0.95); }
         #charge-bar { width: 80%; height: 8px; background: #333; border-radius: 10px; overflow: hidden; }
         #charge-fill { width: 0%; height: 100%; background: #ffd700; transition: width 0.3s; }
 
-        /* 5. BOTTOM FEED (Chat & Logs) */
+        /* الشريط السفلي (الشات والأحداث) */
         #bottom-feed {
             position: absolute; bottom: 10px; left: 10px; right: 10px; height: 150px;
             background: rgba(0, 0, 0, 0.8); border: 1px solid #00e5ff; border-radius: 12px;
@@ -68,11 +68,11 @@
 </head>
 <body>
 
-    <!-- 1. TOP BAR -->
+    <!-- 1. الشريط العلوي -->
     <div id="top-bar">
         <div class="health-section">
             <span>🌍 صحة العالم:</span>
-            <div class="health-bar-track"><div class="health-bar-fill" id="health-fill"></div></div>
+            <div class="health-bar-track"><div class="health-bar-fill" id="health-fill" style="width: 100%;"></div></div>
         </div>
         <div class="wave-section">
             <span id="wave-display">🌊 الموجة: 1</span>
@@ -80,23 +80,25 @@
         </div>
     </div>
 
-    <!-- 2. CENTER STAGE (PixiJS Game) -->
+    <!-- 2. المسرح المركزي -->
     <div id="game-container"></div>
 
-    <!-- 3. LEFT WING (Voting) -->
+    <!-- 3. الجناح الأيسر (التصويت) -->
     <div id="left-wing">
         <div id="vote-fill" style="height: 50%;"></div>
         <div id="vote-label">⬆️ تصويت</div>
     </div>
 
-    <!-- 4. RIGHT WING (Miracle / Support) -->
+    <!-- 4. الجناح الأيمن (معجزة 2000 ريال) -->
     <div id="right-wing">
-        <button id="miracle-btn">💀<br>معجزة<br>2000</button>
+        <a id="miracle-btn" href="https://www.paypal.com/ncp/payment?hosted_button_id=53JHES9WRLTML" target="_blank">
+            💀<br>معجزة<br>2000
+        </a>
         <div id="charge-bar"><div id="charge-fill"></div></div>
         <div style="font-size: 10px; color: #ffd700;">شحن المعجزة</div>
     </div>
 
-    <!-- 5. BOTTOM FEED & CHAT -->
+    <!-- 5. الشريط السفلي (الشات) -->
     <div id="bottom-feed" style="padding-bottom: 50px;">
         <div class="log-entry"><span>النظام:</span> مرحباً في عالم Skull Realms!</div>
     </div>
@@ -106,7 +108,10 @@
     </div>
 
     <script>
-        // --- 1. إعداد PixiJS (المسرح المركزي) ---
+        // 1. الاتصال بالسيرفر (الربط الحقيقي)
+        const socket = io();
+
+        // 2. إعداد PixiJS
         const app = new PIXI.Application({
             width: window.innerWidth,
             height: window.innerHeight,
@@ -114,7 +119,7 @@
         });
         document.getElementById('game-container').appendChild(app.view);
 
-        // رسم الجمجمة المركزية (The Core Skull)
+        // رسم الجمجمة المركزية
         const skull = new PIXI.Graphics();
         skull.beginFill(0x00f3ff);
         skull.drawCircle(0, 0, 80);
@@ -125,58 +130,48 @@
         skull.y = app.screen.height / 2;
         app.stage.addChild(skull);
 
-        // تحريك الجمجمة (التنفس)
         let pulse = 0;
         app.ticker.add(() => {
             pulse += 0.04;
             skull.scale.set(1 + Math.sin(pulse) * 0.05);
         });
 
-        // --- 2. أنظمة الـ UI ---
-        // شريط صحة العالم
-        let health = 100;
-        function updateHealth() {
-            document.getElementById('health-fill').style.width = health + '%';
-            if(health <= 0) document.getElementById('health-fill').style.background = '#ff0000';
-        }
-
-        // شريط التصويت (Left Wing)
-        let votesLeft = 0, votesRight = 0;
-        function updateVote() {
-            const total = votesLeft + votesRight;
-            if(total === 0) { document.getElementById('vote-fill').style.height = '50%'; return; }
-            const ratio = (votesRight / total) * 100;
-            document.getElementById('vote-fill').style.height = ratio + '%';
-        }
-
-        // الشات
-        document.getElementById('send-btn').onclick = function() {
-            const input = document.getElementById('chat-input');
-            const text = input.value.trim();
-            if(!text) return;
-            const feed = document.getElementById('bottom-feed');
-            const entry = document.createElement('div');
-            entry.className = 'log-entry';
-            entry.innerHTML = `<span>أنت:</span> ${text}`;
-            feed.appendChild(entry);
-            feed.scrollTop = feed.scrollHeight;
-            input.value = '';
-
-            // تصويت وهمي للاختبار
-            if(text.includes('يمين') || text.includes('هجوم')) { votesRight++; updateVote(); }
-            if(text.includes('يسار') || text.includes('دفاع')) { votesLeft++; updateVote(); }
-        };
-
-        // تحديث حجم الشاشة
         window.addEventListener('resize', () => {
             app.renderer.resize(window.innerWidth, window.innerHeight);
             skull.x = app.screen.width / 2;
             skull.y = app.screen.height / 2;
         });
 
-        // أرقام وهمية للاختبار (حتى نربط السيرفر لاحقاً)
-        setInterval(() => { health -= 1; updateHealth(); }, 5000);
-        setInterval(() => { votesRight += 1; updateVote(); }, 10000);
+        // 3. نظام الشات والتصويت (الربط بالسيرفر)
+        document.getElementById('send-btn').onclick = function() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            // إرسال الرسالة للسيرفر
+            socket.emit('chat-message', text);
+            input.value = '';
+        };
+
+        // استقبال الأحداث من السيرفر
+        socket.on('new-chat', (data) => {
+            const feed = document.getElementById('bottom-feed');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span>${data.user}:</span> ${data.msg}`;
+            feed.appendChild(entry);
+            feed.scrollTop = feed.scrollHeight;
+        });
+
+        socket.on('update-vote', (data) => {
+            const fill = document.getElementById('vote-fill');
+            fill.style.height = data.ratio + '%';
+        });
+
+        // 4. تأثيرات حركية (إيقاع الجمجمة)
+        setInterval(() => {
+            socket.emit('pulse');
+        }, 2000);
     </script>
 </body>
 </html>
