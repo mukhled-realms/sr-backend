@@ -1,26 +1,37 @@
 const express = require('express');
 const http = require('http');
-const { Server } = require('socket.io');
+const path = require('path');
 const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, { cors: { origin: "*" } });
+const io = require('socket.io')(server, {
+    cors: { origin: "*" }
+});
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
+// الصفحة الرئيسية → الواجهة الأمامية
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'frontend', 'index.html'));
+});
+
+// auth
 const { router: authRoutes } = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-// التعديل المهم هنا: لأننا نصدر دالة عادية، نستدعيها مباشرة ولا نفكها بـ { }
-const setupGameSocket = require('./sockets/gameSocket');
-setupGameSocket(io);
+// الدفع
+const paymentRoutes = require('./routes/payment');
+app.use('/api/payment', paymentRoutes);
 
-server.listen(process.env.PORT || 3000, () =>
-  console.log('Skull Realms Server running')
-);
+// السوكيت
+const { initGameSocket } = require('./sockets/gameSocket');
+initGameSocket(io);
+
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Skull Realms running on port ${PORT}`));
 
 module.exports.io = io;
