@@ -1,101 +1,577 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Skull Realms | Live Synth</title>
-
-    <!-- PixiJS -->
-    <script src="https://pixijs.download/release/pixi.js"></script>
-
-    <!-- Socket.io -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-
-    <!-- Howler.js (الصوتيات) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
-
-    <!-- موسيقى الخلفية -->
-    <audio id="bgMusic" src="/assets/music/lofi.mp3" loop></audio>
-
-    <!-- موسيقى الأحداث الحماسية -->
-    <audio id="eventMusic" src="/assets/music/hype.mp3" loop></audio>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Skull Realms</title>
     <style>
-        body {
-            margin: 0;
-            background: #0a0a0c;
-            overflow: hidden;
-            font-family: 'Courier New', monospace;
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap');
+
+        :root {
+            --gold: #FFD700;
+            --gold-dark: #B8860B;
+            --neon-pink: #FF1493;
+            --neon-purple: #9400D3;
+            --neon-cyan: #00FFFF;
+            --dark-bg: #0a0a0f;
+            --card-bg: #12121a;
+            --border-glow: rgba(255, 215, 0, 0.3);
         }
 
-        #ui-layer {
-            position: absolute;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: 'Tajawal', sans-serif;
+            background: var(--dark-bg);
+            color: #fff;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
+            background: 
+                radial-gradient(circle at 20% 50%, rgba(148, 0, 211, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(255, 20, 147, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 50% 0%, rgba(255, 215, 0, 0.05) 0%, transparent 50%);
             pointer-events: none;
+            z-index: 0;
         }
 
-        #chat-box {
+        .container {
+            max-width: 480px;
+            margin: 0 auto;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .page { display: none; animation: fadeIn 0.4s ease; }
+        .page.active { display: block; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .main-card {
+            background: linear-gradient(145deg, #0f0f1a 0%, #1a1a2e 100%);
+            border: 2px solid var(--gold-dark);
+            border-radius: 24px;
+            padding: 35px 25px;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.1), inset 0 1px 0 rgba(255,255,255,0.05);
+            margin-top: 10px;
+        }
+
+        .main-card::before {
+            content: '';
             position: absolute;
-            bottom: 20px; left: 20px;
-            width: 300px; height: 220px;
-            background: rgba(0, 0, 0, 0.6);
-            border: 1px solid #00f3ff;
-            pointer-events: auto;
-            color: #00f3ff;
-            overflow-y: auto;
-            padding: 10px;
-            border-radius: 5px;
-            backdrop-filter: blur(10px);
+            top: -2px; left: -2px; right: -2px; bottom: -2px;
+            background: linear-gradient(45deg, var(--gold), var(--neon-pink), var(--neon-purple), var(--gold));
+            border-radius: 26px; z-index: -1; opacity: 0.3; filter: blur(8px);
         }
 
-        .neon-text {
-            color: #ff0055;
-            text-shadow: 0 0 10px #ff0055;
+        .crown-wrapper { position: relative; display: inline-block; margin-bottom: 15px; }
+        .crown {
+            font-size: 72px;
+            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.6));
+            animation: crownFloat 3s ease-in-out infinite;
+            display: inline-block; cursor: pointer; transition: transform 0.2s;
         }
-        
-        /* شاشة الدخول التي طلبها OpenAI */
-        #overlay {
-            position: fixed; 
-            top: 0; left: 0; 
-            width: 100%; height: 100%; 
-            background: #0a0a0c; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            z-index: 1000;
+        .crown:active { transform: scale(0.9); }
+        @keyframes crownFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+        .crown-shine {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.3) 50%, transparent 70%);
+            animation: shine 3s ease-in-out infinite; pointer-events: none;
         }
-        
-        #start-btn {
-            padding: 20px 40px; 
-            background: #00f3ff; 
-            color: #0a0a0c; 
-            font-family: 'Courier New', sans-serif; 
-            font-weight: bold;
-            border: none; 
-            font-size: 24px;
-            box-shadow: 0 0 20px #00f3ff; 
-            cursor: pointer;
-            border-radius: 10px;
+        @keyframes shine { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+
+        .main-title { font-size: 32px; font-weight: 900; background: linear-gradient(135deg, var(--gold) 0%, #FFA500 50%, var(--gold) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; margin-bottom: 10px; text-shadow: none; }
+        .main-subtitle { color: #aaa; font-size: 15px; margin-bottom: 25px; line-height: 1.6; }
+
+        .btn {
+            display: block; width: 100%; padding: 16px 20px; border: none; border-radius: 16px;
+            font-family: 'Tajawal', sans-serif; font-size: 16px; font-weight: 700; cursor: pointer;
+            margin-bottom: 12px; transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative; overflow: hidden; text-align: center; text-decoration: none; color: #fff;
+        }
+        .btn::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transition: left 0.5s; }
+        .btn:hover::before, .btn:active::before { left: 100%; }
+
+        .btn-primary { background: linear-gradient(135deg, var(--neon-pink) 0%, var(--neon-purple) 100%); box-shadow: 0 4px 20px rgba(255, 20, 147, 0.3); border: 1px solid rgba(255, 20, 147, 0.4); }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(255, 20, 147, 0.45); }
+        .btn-gold { background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%); color: #1a1a1a; box-shadow: 0 4px 20px rgba(255, 215, 0, 0.3); border: 1px solid rgba(255, 215, 0, 0.5); }
+        .btn-gold:hover { transform: translateY(-2px); box-shadow: 0 6px 30px rgba(255, 215, 0, 0.45); }
+        .btn-dark { background: linear-gradient(145deg, #1a1a2e 0%, #0f0f1a 100%); border: 2px solid var(--neon-pink); color: #fff; box-shadow: 0 4px 15px rgba(255, 20, 147, 0.15); }
+        .btn-dark:hover { transform: translateY(-2px); box-shadow: 0 6px 25px rgba(255, 20, 147, 0.25); border-color: var(--neon-pink); }
+        .btn-icon { margin-left: 8px; font-size: 18px; vertical-align: middle; }
+
+        .share-text { color: var(--neon-cyan); font-size: 13px; margin-top: 15px; cursor: pointer; transition: color 0.3s; }
+        .share-text:hover { color: #fff; text-shadow: 0 0 10px var(--neon-cyan); }
+
+        .game-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; padding: 0 5px; }
+        .back-btn { background: rgba(255,255,255,0.08); border: none; color: #fff; width: 42px; height: 42px; border-radius: 12px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; transition: all 0.3s; }
+        .back-btn:hover { background: rgba(255,255,255,0.15); transform: scale(1.05); }
+        .game-title { font-size: 20px; font-weight: 800; color: var(--gold); }
+        .score-display { background: linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,20,147,0.1)); border: 1px solid rgba(255,215,0,0.3); padding: 8px 16px; border-radius: 12px; font-weight: 700; font-size: 15px; color: var(--gold); }
+
+        .skull-arena { background: linear-gradient(145deg, #0d0d15 0%, #151525 100%); border: 2px solid rgba(255,255,255,0.06); border-radius: 24px; padding: 40px 20px; text-align: center; position: relative; margin-bottom: 20px; overflow: hidden; }
+        .skull-arena::before { content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%; background: radial-gradient(circle, rgba(255,20,147,0.03) 0%, transparent 70%); animation: rotate 20s linear infinite; }
+        @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .skull-container { position: relative; display: inline-block; cursor: pointer; user-select: none; z-index: 2; }
+        .skull { font-size: 100px; display: inline-block; transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55); filter: drop-shadow(0 0 15px currentColor); position: relative; }
+        .skull.level-1 { color: #888; filter: drop-shadow(0 0 5px #888); }
+        .skull.level-2 { color: #aaa; filter: drop-shadow(0 0 10px #aaa); }
+        .skull.level-3 { color: #FF69B4; filter: drop-shadow(0 0 15px #FF69B4); }
+        .skull.level-4 { color: #FF1493; filter: drop-shadow(0 0 25px #FF1493); }
+        .skull.level-5 { color: #FF1493; filter: drop-shadow(0 0 30px #FF1493) drop-shadow(0 0 60px #9400D3); animation: neonPulse 1.5s ease-in-out infinite; }
+        @keyframes neonPulse { 0%, 100% { filter: drop-shadow(0 0 30px #FF1493) drop-shadow(0 0 60px #9400D3); } 50% { filter: drop-shadow(0 0 50px #FF1493) drop-shadow(0 0 100px #9400D3); } }
+
+        .skull.shake { animation: shakeEffect 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+        @keyframes shakeEffect { 0%, 100% { transform: translateX(0) rotate(0deg); } 10% { transform: translateX(-8px) rotate(-3deg); } 20% { transform: translateX(8px) rotate(3deg); } 30% { transform: translateX(-6px) rotate(-2deg); } 40% { transform: translateX(6px) rotate(2deg); } 50% { transform: translateX(-4px) rotate(-1deg); } 60% { transform: translateX(4px) rotate(1deg); } 70% { transform: translateX(-2px) rotate(0deg); } 80% { transform: translateX(2px) rotate(0deg); } }
+        .skull.level-up { animation: levelUpEffect 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes levelUpEffect { 0% { transform: scale(1); } 30% { transform: scale(1.4); } 50% { transform: scale(0.9); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+
+        .particle { position: absolute; pointer-events: none; font-size: 20px; animation: particleFloat 1s ease-out forwards; z-index: 10; }
+        @keyframes particleFloat { 0% { opacity: 1; transform: translate(0, 0) scale(1); } 100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0.3); } }
+
+        .click-feedback { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 28px; font-weight: 900; color: var(--gold); pointer-events: none; animation: clickPop 0.7s ease-out forwards; z-index: 10; text-shadow: 0 0 20px var(--gold); }
+        @keyframes clickPop { 0% { opacity: 1; transform: translate(-50%, -50%) scale(0.5); } 50% { opacity: 1; transform: translate(-50%, -80%) scale(1.2); } 100% { opacity: 0; transform: translate(-50%, -120%) scale(0.8); } }
+
+        .level-info { margin-top: 20px; z-index: 2; position: relative; }
+        .level-name { font-size: 22px; font-weight: 800; margin-bottom: 8px; }
+        .level-bar-container { width: 80%; max-width: 280px; height: 10px; background: rgba(255,255,255,0.08); border-radius: 10px; margin: 0 auto 10px; overflow: hidden; border: 1px solid rgba(255,255,255,0.05); }
+        .level-bar { height: 100%; border-radius: 10px; background: linear-gradient(90deg, var(--neon-pink), var(--neon-purple)); transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 0 10px rgba(255, 20, 147, 0.4); }
+        .points-text { color: #888; font-size: 14px; }
+        .points-text span { color: var(--gold); font-weight: 700; }
+
+        .chat-container { background: linear-gradient(145deg, #0d0d15 0%, #151525 100%); border: 1px solid rgba(255,255,255,0.06); border-radius: 24px; overflow: hidden; display: flex; flex-direction: column; height: calc(100vh - 140px); max-height: 700px; }
+        .chat-header { background: linear-gradient(135deg, rgba(148,0,211,0.2), rgba(255,20,147,0.1)); padding: 18px 20px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 12px; }
+        .chat-avatar { width: 44px; height: 44px; background: linear-gradient(135deg, var(--neon-purple), var(--neon-pink)); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 22px; box-shadow: 0 0 15px rgba(148, 0, 211, 0.3); }
+        .chat-header-info h3 { font-size: 17px; font-weight: 800; color: var(--neon-pink); }
+        .chat-header-info p { font-size: 12px; color: #888; }
+
+        .chat-messages { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 14px; }
+        .chat-messages::-webkit-scrollbar { width: 4px; }
+        .chat-messages::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+        .message { max-width: 85%; padding: 14px 18px; border-radius: 18px; font-size: 14px; line-height: 1.7; animation: messageSlide 0.3s ease; position: relative; }
+        @keyframes messageSlide { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .message-bot { align-self: flex-start; background: linear-gradient(145deg, #1a1a2e, #252540); border: 1px solid rgba(255,255,255,0.06); border-bottom-right-radius: 4px; }
+        .message-user { align-self: flex-end; background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple)); border-bottom-left-radius: 4px; box-shadow: 0 4px 15px rgba(255, 20, 147, 0.2); }
+
+        .message-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; font-size: 16px; margin-left: 10px; vertical-align: middle; flex-shrink: 0; }
+        .message-header { display: flex; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .message-bot .message-header { color: var(--neon-pink); font-weight: 700; font-size: 13px; }
+        .icon-shield { background: rgba(0,255,127,0.15); }
+        .icon-sword { background: rgba(255,215,0,0.15); }
+        .icon-coin { background: rgba(255,215,0,0.15); }
+        .icon-warning { background: rgba(255,69,0,0.15); }
+        .icon-info { background: rgba(0,191,255,0.15); }
+        .icon-robot { background: rgba(148,0,211,0.15); }
+
+        .typing-indicator { display: flex; gap: 5px; padding: 18px; align-self: flex-start; }
+        .typing-indicator span { width: 8px; height: 8px; background: var(--neon-pink); border-radius: 50%; animation: typingBounce 1.4s ease-in-out infinite; }
+        .typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes typingBounce { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-10px); } }
+
+        .chat-input-area { padding: 15px 20px; border-top: 1px solid rgba(255,255,255,0.06); display: flex; gap: 10px; background: rgba(0,0,0,0.2); }
+        .chat-input { flex: 1; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 12px 16px; color: #fff; font-family: 'Tajawal', sans-serif; font-size: 14px; outline: none; transition: all 0.3s; }
+        .chat-input:focus { border-color: var(--neon-pink); background: rgba(255,255,255,0.08); box-shadow: 0 0 15px rgba(255, 20, 147, 0.1); }
+        .chat-input::placeholder { color: #666; }
+
+        .send-btn { background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple)); border: none; color: #fff; width: 46px; height: 46px; border-radius: 14px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 15px rgba(255, 20, 147, 0.3); }
+        .send-btn:hover { transform: scale(1.05); box-shadow: 0 6px 20px rgba(255, 20, 147, 0.4); }
+        .send-btn:active { transform: scale(0.95); }
+
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; padding: 20px; animation: fadeIn 0.3s ease; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: linear-gradient(145deg, #12121a, #1a1a2e); border: 2px solid var(--gold-dark); border-radius: 24px; padding: 30px 25px; width: 100%; max-width: 400px; text-align: center; position: relative; box-shadow: 0 0 40px rgba(255, 215, 0, 0.15); animation: modalPop 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); }
+        @keyframes modalPop { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+        .modal-close { position: absolute; top: 15px; right: 15px; background: rgba(255,255,255,0.08); border: none; color: #888; width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 18px; transition: all 0.3s; display: flex; align-items: center; justify-content: center; }
+        .modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
+        .modal-icon { font-size: 50px; margin-bottom: 15px; display: inline-block; animation: broadcastPulse 2s ease-in-out infinite; }
+        @keyframes broadcastPulse { 0%, 100% { transform: scale(1); filter: drop-shadow(0 0 10px var(--neon-cyan)); } 50% { transform: scale(1.1); filter: drop-shadow(0 0 25px var(--neon-cyan)); } }
+        .modal-title { font-size: 22px; font-weight: 800; color: var(--gold); margin-bottom: 10px; }
+        .modal-text { color: #aaa; font-size: 14px; margin-bottom: 20px; line-height: 1.6; }
+        .copy-box { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+        .copy-box input { flex: 1; background: transparent; border: none; color: var(--neon-cyan); font-family: 'Tajawal', sans-serif; font-size: 14px; outline: none; direction: ltr; text-align: left; }
+        .copy-btn { background: linear-gradient(135deg, var(--neon-cyan), #008B8B); border: none; color: #000; padding: 8px 16px; border-radius: 10px; font-family: 'Tajawal', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; transition: all 0.3s; }
+        .copy-btn:hover { transform: scale(1.05); box-shadow: 0 0 15px rgba(0, 255, 255, 0.3); }
+        .copy-btn.copied { background: linear-gradient(135deg, #00FF7F, #00AA55); color: #fff; }
+
+        .toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(100px); background: linear-gradient(135deg, #1a1a2e, #252540); border: 1px solid rgba(255,255,255,0.1); padding: 14px 28px; border-radius: 14px; font-size: 14px; font-weight: 700; color: #fff; z-index: 2000; opacity: 0; transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55); box-shadow: 0 10px 40px rgba(0,0,0,0.4); white-space: nowrap; }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        @media (max-width: 400px) {
+            .container { padding: 15px; }
+            .main-card { padding: 25px 18px; }
+            .main-title { font-size: 26px; }
+            .skull { font-size: 80px; }
         }
     </style>
 </head>
-
 <body>
+    <div class="container">
+        <!-- الصفحة الرئيسية -->
+        <div class="page active" id="page-home">
+            <div class="main-card">
+                <div class="crown-wrapper">
+                    <div class="crown" onclick="playCrownSound()">👑</div>
+                    <div class="crown-shine"></div>
+                </div>
+                <h1 class="main-title" id="txt-title">الكنز هنا</h1>
+                <p class="main-subtitle" id="txt-subtitle">تعال، اربح، واستقبل الهدايا. ابدأ رحلتك الآن.</p>
 
-    <!-- شاشة دخول اللعبة -->
-    <div id="overlay">
-        <button id="start-btn">ENTER SKULL REALMS</button>
-    </div>
+                <button class="btn btn-primary" onclick="goToGame()" id="txt-play-btn">
+                    <span class="btn-icon">🎮</span> <span id="txt-play-text">ابدأ اللعبة (Skull Realms)</span>
+                </button>
 
-    <div id="game-container"></div>
+                <button class="btn btn-gold" onclick="window.open('ضع_هنا_رابط_باي_بال_الحقيقي', '_blank')">
+                    <span class="btn-icon">💎</span> ادعم المطور (2000 ريال)
+                </button>
 
-    <div id="ui-layer">
-        <div id="chat-box">
-            <div class="neon-text">SYSTEM: Connected to Skull Realms...</div>
+                <button class="btn btn-dark" onclick="window.open('https://www.tiktok.com/@YOUR_TIKTOK_USERNAME', '_blank')">
+                    <span class="btn-icon">📱</span> تابعنا على تيك توك
+                </button>
+
+                <p class="share-text" onclick="shareApp()">🔗 اشترك في البث المباشر • انشر اللعبة لأصدقائك</p>
+            </div>
+        </div>
+
+        <!-- صفحة اللعبة -->
+        <div class="page" id="page-game">
+            <div class="game-header">
+                <button class="back-btn" onclick="goHome()">←</button>
+                <h2 class="game-title">Skull Realms</h2>
+                <div class="score-display">⭐ <span id="score">0</span></div>
+            </div>
+
+            <div class="skull-arena">
+                <div class="skull-container" id="skullContainer" onclick="clickSkull(event)">
+                    <div class="skull level-1" id="skull">💀</div>
+                </div>
+                <div class="level-info">
+                    <div class="level-name" id="levelName">💀 جمجمة مبتدئة</div>
+                    <div class="level-bar-container">
+                        <div class="level-bar" id="levelBar" style="width: 0%"></div>
+                    </div>
+                    <div class="points-text">
+                        النقاط: <span id="points">0</span> / <span id="nextLevel">50</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="btn btn-primary" onclick="goToChat()">
+                <span class="btn-icon">🤖</span> المساعد الذكي
+            </button>
+        </div>
+
+        <!-- صفحة الشات -->
+        <div class="page" id="page-chat">
+            <div class="game-header">
+                <button class="back-btn" onclick="goToGame()">←</button>
+                <h2 class="game-title">المساعد الذكي</h2>
+                <div style="width: 42px;"></div>
+            </div>
+
+            <div class="chat-container">
+                <div class="chat-header">
+                    <div class="chat-avatar">🤖</div>
+                    <div class="chat-header-info">
+                        <h3>المساعد الذكي</h3>
+                        <p>متصل الآن • يرد فوراً</p>
+                    </div>
+                </div>
+
+                <div class="chat-messages" id="chatMessages">
+                    <div class="message message-bot">
+                        <div class="message-header">
+                            <span class="message-icon icon-robot">🤖</span>
+                            <span>المساعد الذكي</span>
+                        </div>
+                        أهلاً بك في Skull Realms! اسألني عن الربح، الدعم، أو طريقة اللعب وسأرد عليك فوراً.
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" 
+                           placeholder="اكتب رسالتك (مثل: ربح، دعم)..." 
+                           onkeypress="if(event.key==='Enter')sendMessage()">
+                    <button class="send-btn" onclick="sendMessage()">📨</button>
+                </div>
+            </div>
         </div>
     </div>
 
-    <script src="app.js"></script>
+    <!-- نافذة البث -->
+    <div class="modal-overlay" id="broadcastModal" onclick="closeBroadcast(event)">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="modal-close" onclick="closeBroadcast()">✕</button>
+            <div class="modal-icon">📡</div>
+            <h3 class="modal-title">بث مباشر هادئ</h3>
+            <p class="modal-text">انسخ الرابط وشاركه مع جمهورك. كل نقرة على الجمجمة = دعم!</p>
+            <div class="copy-box">
+                <input type="text" value="https://skullrealms.app/live" readonly id="broadcastLink">
+                <button class="copy-btn" id="copyBtn" onclick="copyLink()">نسخ</button>
+            </div>
+            <button class="btn btn-primary" onclick="closeBroadcast()">
+                <span class="btn-icon">✨</span>
+                فهمت، لنبدأ!
+            </button>
+        </div>
+    </div>
+
+    <!-- إشعار -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // === الترجمة التلقائية ===
+        const userLang = (navigator.language || navigator.userLanguage || 'ar').toLowerCase();
+        const isArabic = userLang.startsWith('ar');
+
+        const translations = {
+            ar: {
+                title: "الكنز هنا",
+                subtitle: "تعال، اربح، واستقبل الهدايا. ابدأ رحلتك الآن.",
+                playText: "ابدأ اللعبة (Skull Realms)"
+            },
+            en: {
+                title: "Treasure Is Here",
+                subtitle: "Come, earn, and receive gifts. Start your journey now.",
+                playText: "Start Game (Skull Realms)"
+            }
+        };
+
+        const t = isArabic ? translations.ar : translations.en;
+        document.getElementById('txt-title').innerText = t.title;
+        document.getElementById('txt-subtitle').innerText = t.subtitle;
+        document.getElementById('txt-play-text').innerText = t.playText;
+
+        // ==================== نظام الصوت (Web Audio API) ====================
+        const AudioEngine = {
+            ctx: null,
+            init() {
+                if (!this.ctx) { this.ctx = new (window.AudioContext || window.webkitAudioContext)(); }
+                if (this.ctx.state === 'suspended') { this.ctx.resume(); }
+            },
+            playClick() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(800, t); osc.frequency.exponentialRampToValueAtTime(1200, t + 0.05); osc.frequency.exponentialRampToValueAtTime(400, t + 0.15);
+                gain.gain.setValueAtTime(0.3, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.15);
+            },
+            playCrown() {
+                this.init(); const t = this.ctx.currentTime;
+                const osc1 = this.ctx.createOscillator(); const gain1 = this.ctx.createGain();
+                osc1.type = 'triangle'; osc1.frequency.setValueAtTime(523, t); osc1.frequency.setValueAtTime(659, t + 0.1); osc1.frequency.setValueAtTime(784, t + 0.2);
+                gain1.gain.setValueAtTime(0.15, t); gain1.gain.exponentialRampToValueAtTime(0.01, t + 0.4);
+                osc1.connect(gain1); gain1.connect(this.ctx.destination); osc1.start(t); osc1.stop(t + 0.4);
+                const osc2 = this.ctx.createOscillator(); const gain2 = this.ctx.createGain();
+                osc2.type = 'sine'; osc2.frequency.setValueAtTime(1047, t);
+                gain2.gain.setValueAtTime(0.08, t); gain2.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc2.connect(gain2); gain2.connect(this.ctx.destination); osc2.start(t); osc2.stop(t + 0.3);
+            },
+            playLevelUp() {
+                this.init(); const t = this.ctx.currentTime; const notes = [523, 659, 784, 1047, 1319];
+                notes.forEach((freq, i) => {
+                    const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                    osc.type = 'square'; osc.frequency.setValueAtTime(freq, t + i * 0.08);
+                    gain.gain.setValueAtTime(0.1, t + i * 0.08); gain.gain.exponentialRampToValueAtTime(0.01, t + i * 0.08 + 0.2);
+                    osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t + i * 0.08); osc.stop(t + i * 0.08 + 0.2);
+                });
+                const bufferSize = this.ctx.sampleRate * 0.3; const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) { data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufferSize, 3); }
+                const noise = this.ctx.createBufferSource(); noise.buffer = buffer;
+                const noiseGain = this.ctx.createGain(); noiseGain.gain.setValueAtTime(0.05, t); noiseGain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+                noise.connect(noiseGain); noiseGain.connect(this.ctx.destination); noise.start(t);
+            },
+            playOpenModal() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(200, t); osc.frequency.exponentialRampToValueAtTime(800, t + 0.2);
+                gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.25);
+            },
+            playCloseModal() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+                gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.15);
+            },
+            playSend() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1200, t); osc.frequency.exponentialRampToValueAtTime(1800, t + 0.05);
+                gain.gain.setValueAtTime(0.15, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.08);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.08);
+            },
+            playReceive() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(600, t); osc.frequency.setValueAtTime(800, t + 0.05);
+                gain.gain.setValueAtTime(0.12, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.15);
+            },
+            playCopy() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sine'; osc.frequency.setValueAtTime(1500, t);
+                gain.gain.setValueAtTime(0.1, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.1);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.1);
+            },
+            playShake() {
+                this.init(); const t = this.ctx.currentTime; const osc = this.ctx.createOscillator(); const gain = this.ctx.createGain();
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(80, t); osc.frequency.linearRampToValueAtTime(60, t + 0.15);
+                gain.gain.setValueAtTime(0.08, t); gain.gain.exponentialRampToValueAtTime(0.01, t + 0.15);
+                osc.connect(gain); gain.connect(this.ctx.destination); osc.start(t); osc.stop(t + 0.15);
+            }
+        };
+
+        // ==================== نظام اللعبة ====================
+        let points = 0; let level = 1;
+        const levels = [
+            { name: '💀 جمجمة مبتدئة', required: 50, class: 'level-1' },
+            { name: '💀 جمجمة فضية', required: 150, class: 'level-2' },
+            { name: '💀 جمجمة وردية', required: 300, class: 'level-3' },
+            { name: '💀 جمجمة نيون', required: 500, class: 'level-4' },
+            { name: '👑 جمجمة ملكية نيون', required: 999999, class: 'level-5' }
+        ];
+
+        function getCurrentLevel() {
+            let total = 0;
+            for (let i = 0; i < levels.length; i++) {
+                total += levels[i].required;
+                if (points < total) return { ...levels[i], index: i, progress: points - (total - levels[i].required), totalRequired: levels[i].required };
+            }
+            return { ...levels[levels.length - 1], index: levels.length - 1, progress: levels[levels.length - 1].required, totalRequired: levels[levels.length - 1].required };
+        }
+
+        function clickSkull(event) {
+            points += 1;
+            AudioEngine.playClick(); AudioEngine.playShake();
+
+            const skull = document.getElementById('skull'); const container = document.getElementById('skullContainer');
+            skull.classList.remove('shake'); void skull.offsetWidth; skull.classList.add('shake');
+
+            const feedback = document.createElement('div');
+            feedback.className = 'click-feedback'; feedback.textContent = '+1';
+            feedback.style.left = event.offsetX + 'px'; feedback.style.top = event.offsetY + 'px';
+            container.appendChild(feedback); setTimeout(() => feedback.remove(), 700);
+
+            const particles = ['✨', '💫', '⭐', '🔥'];
+            for (let i = 0; i < 4; i++) {
+                const p = document.createElement('div'); p.className = 'particle';
+                p.textContent = particles[Math.floor(Math.random() * particles.length)];
+                const angle = (Math.PI * 2 * i) / 4 + Math.random() * 0.5; const dist = 40 + Math.random() * 40;
+                p.style.setProperty('--tx', Math.cos(angle) * dist + 'px');
+                p.style.setProperty('--ty', Math.sin(angle) * dist + 'px');
+                p.style.left = event.offsetX + 'px'; p.style.top = event.offsetY + 'px';
+                container.appendChild(p); setTimeout(() => p.remove(), 1000);
+            }
+
+            updateGameUI();
+        }
+
+        function updateGameUI() {
+            const current = getCurrentLevel();
+            const prevTotal = levels.slice(0, current.index).reduce((a, b) => a + b.required, 0);
+            const progress = ((points - prevTotal) / current.totalRequired) * 100;
+
+            document.getElementById('score').textContent = points;
+            document.getElementById('points').textContent = points - prevTotal;
+            document.getElementById('nextLevel').textContent = current.totalRequired;
+            document.getElementById('levelBar').style.width = Math.min(progress, 100) + '%';
+
+            const skull = document.getElementById('skull'); const oldLevel = skull.className.match(/level-\d/)?.[0];
+            const newLevel = current.class;
+
+            if (oldLevel && oldLevel !== newLevel) {
+                AudioEngine.playLevelUp();
+                skull.classList.remove('level-1', 'level-2', 'level-3', 'level-4', 'level-5');
+                skull.classList.add(newLevel, 'level-up');
+                setTimeout(() => skull.classList.remove('level-up'), 800);
+                showToast('🎉 ترقية! ' + current.name);
+            } else {
+                skull.classList.remove('level-1', 'level-2', 'level-3', 'level-4', 'level-5');
+                skull.classList.add(newLevel);
+            }
+
+            document.getElementById('levelName').textContent = current.name;
+        }
+
+        // ==================== التنقل ====================
+        function showPage(id) { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('page-' + id).classList.add('active'); }
+        function goHome() { showPage('home'); }
+        function goToGame() { showPage('game'); AudioEngine.playOpenModal(); }
+        function goToChat() { showPage('chat'); AudioEngine.playOpenModal(); }
+
+        // ==================== نافذة البث ====================
+        function openBroadcast() { document.getElementById('broadcastModal').classList.add('active'); AudioEngine.playOpenModal(); }
+        function closeBroadcast(e) { if (e && e.target !== e.currentTarget) return; document.getElementById('broadcastModal').classList.remove('active'); AudioEngine.playCloseModal(); }
+        function copyLink() {
+            const input = document.getElementById('broadcastLink'); input.select(); document.execCommand('copy'); AudioEngine.playCopy();
+            const btn = document.getElementById('copyBtn'); btn.textContent = '✓ تم'; btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = 'نسخ'; btn.classList.remove('copied'); }, 2000);
+            showToast('📋 تم نسخ الرابط!');
+        }
+
+        function playCrownSound() { AudioEngine.playCrown(); const crown = document.querySelector('.crown'); crown.style.transform = 'scale(1.2)'; setTimeout(() => crown.style.transform = '', 200); }
+
+        function shareApp() {
+            AudioEngine.playCopy();
+            if (navigator.share) { navigator.share({ title: 'Skull Realms', text: 'انضم إلي في Skull Realms! 🎮👑', url: window.location.href }); }
+            else { showToast('🔗 تم نسخ رابط اللعبة!'); }
+        }
+
+        function showToast(msg) { const toast = document.getElementById('toast'); toast.textContent = msg; toast.classList.add('show'); setTimeout(() => toast.classList.remove('show'), 2500); }
+
+        // ==================== الشات الذكي ====================
+        const botResponses = {
+            'ربح': { icon: '💰', iconClass: 'icon-coin', text: 'نظام الربح يعتمد على تفاعل اللاعبين ودعمهم المباشر لتطوير المنصة باستمرار. كل نقطة تجمعها تزيد من فرصك في المكافآت المستقبلية! 💰✨' },
+            'دعم': { icon: '💎', iconClass: 'icon-coin', text: 'يمكنك دعم المطور بـ 2000 ريال لفتح ميزات حصرية والحصول على شارة VIP ملكية في اللعبة. دعمك يُبني المستقبل! 💎👑' },
+            'لعب': { icon: '⚔️', iconClass: 'icon-sword', text: 'انقر على الجمجمة لجمع النقاط! كل 50 نقطة ترفع مستواك. ابدأ باللون الرمادي ووصل للون الوردي النيون المزدوج! ⚔️🎮' },
+            'نصب': { icon: '🛡️', iconClass: 'icon-shield', text: '🛡️ نحن منصة شفافة 100%. لا نعدك بثراء بين ليلة وضحاها. الربح يأتي من دعم المجتمع وتفاعله الحقيقي. نحن هنا للترفيه والبناء المشترك!' },
+            'هذا نصب': { icon: '🛡️', iconClass: 'icon-shield', text: '🛡️ نحن منصة شفافة 100%. لا نعدك بثراء بين ليلة وضحاها. الربح يأتي من دعم المجتمع وتفاعله الحقيقي. نحن هنا للترفيه والبناء المشترك!' },
+            'بث': { icon: '📡', iconClass: 'icon-info', text: 'نظام البث الهادئ يسمح لصناع المحتوى بمشاركة رابط مخصص. كل نقرة من جمهورك = دعم مباشر للمنصة! 📡🎥' },
+            'مستوى': { icon: '⚔️', iconClass: 'icon-sword', text: 'المستويات: 💀 رمادي → 💀 فضي → 💀 وردي → 💀 نيون → 👑 ملكي نيون! كل مستوى يحتاج نقاط أكثر ويعطيك مظهراً أكثر إبهاراً! ⚔️⭐' }
+        };
+
+        const defaultResponse = { icon: '🤖', iconClass: 'icon-robot', text: 'شكراً لسؤالك! 💡 يمكنك سؤالي عن: الربح، الدعم، طريقة اللعب، المستويات، أو البث المباشر. أنا هنا للمساعدة!' };
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput'); const text = input.value.trim(); if (!text) return;
+            AudioEngine.playSend();
+
+            const messagesDiv = document.getElementById('chatMessages');
+            const userMsg = document.createElement('div'); userMsg.className = 'message message-user'; userMsg.textContent = text;
+            messagesDiv.appendChild(userMsg); input.value = ''; messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            const typing = document.createElement('div'); typing.className = 'typing-indicator'; typing.innerHTML = '<span></span><span></span><span></span>'; typing.id = 'typing';
+            messagesDiv.appendChild(typing); messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            let response = defaultResponse;
+            for (const key in botResponses) { if (text.includes(key)) { response = botResponses[key]; break; } }
+
+            setTimeout(() => {
+                document.getElementById('typing')?.remove(); AudioEngine.playReceive();
+                const botMsg = document.createElement('div'); botMsg.className = 'message message-bot';
+                botMsg.innerHTML = `<div class="message-header"><span class="message-icon ${response.iconClass}">${response.icon}</span><span>المساعد الذكي</span></div>${response.text}`;
+                messagesDiv.appendChild(botMsg); messagesDiv.scrollTop = messagesDiv.scrollHeight;
+            }, 800 + Math.random() * 600);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.addEventListener('click', () => { AudioEngine.init(); }, { once: true });
+        });
+    </script>
 </body>
 </html>
