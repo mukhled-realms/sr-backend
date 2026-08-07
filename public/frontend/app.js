@@ -1,27 +1,25 @@
-// --- 0. إصلاح الشاشة السوداء (السطر السحري) ---
+// --- إصلاح الشاشة السوداء ---
 document.body.style.backgroundColor = "#0a0a0c";
-document.body.offsetHeight; // إجبار المتصفح على إعادة الرسم فوراً
+document.body.offsetHeight;
 
 // --- موسيقى الخلفية ---
 const bgMusic = document.getElementById("bgMusic");
-bgMusic.volume = 0.25; // صوت منخفض
+bgMusic.volume = 0.25;
 bgMusic.play().catch(() => {
-    // بعض المتصفحات تمنع التشغيل التلقائي
     document.body.addEventListener("click", () => bgMusic.play(), { once: true });
 });
 
-// --- موسيقى الأحداث ---
 const eventMusic = document.getElementById("eventMusic");
 eventMusic.volume = 0.35;
 
-// --- 1. إعداد الصوتيات (Howler.js) ---
+// --- إعداد الصوتيات (Howler.js) ---
 const sounds = {
     pickup: new Howl({ src: ['/assets/sounds/pickup.mp3'], volume: 0.5 }),
     vipEntry: new Howl({ src: ['/assets/sounds/vip-fanfare.mp3'], volume: 0.8 }),
     oracle: new Howl({ src: ['/assets/sounds/whisper.mp3'], volume: 0.4, rate: 0.8 })
 };
 
-// --- 2. نظام الجزيئات ---
+// --- نظام الجزيئات ---
 class ParticleSystem {
     constructor(container) {
         this.container = container;
@@ -56,10 +54,10 @@ class ParticleSystem {
     }
 }
 
-// --- 3. الاتصال بالسيرفر (متوافق مع Render) ---
+// --- الاتصال بالسيرفر ---
 const socket = io(window.location.origin);
 
-// --- 4. إعداد PixiJS ---
+// --- إعداد PixiJS ---
 const app = new PIXI.Application({
     width: window.innerWidth,
     height: window.innerHeight,
@@ -67,8 +65,6 @@ const app = new PIXI.Application({
     antialias: true
 });
 document.getElementById('game-container').appendChild(app.view);
-
-// إصلاح إضافي للشاشة السوداء
 app.renderer.backgroundColor = 0x0a0a0c;
 
 const skullsContainer = new PIXI.Container();
@@ -78,7 +74,7 @@ const skulls = {};
 const particles = new ParticleSystem(app.stage);
 app.ticker.add(() => particles.update());
 
-// --- 5. رسم الجمجمة المتوهجة ---
+// --- رسم الجمجمة المتوهجة ---
 function createSkull(id, x, y) {
     const container = new PIXI.Container();
 
@@ -114,7 +110,7 @@ function createSkull(id, x, y) {
     skulls[id] = container;
 }
 
-// --- 6. تأثير الكتابة (Typewriter) ---
+// --- تأثير الكتابة ---
 function typeWriterEffect(text, element) {
     element.innerHTML = '';
     let i = 0;
@@ -129,7 +125,7 @@ function typeWriterEffect(text, element) {
     type();
 }
 
-// --- 7. استقبال الأحداث ---
+// --- الأحداث ---
 socket.on('spawn-skull', (data) => createSkull(data.id, data.x, data.y));
 
 socket.on('remove-skull', (id) => {
@@ -144,12 +140,8 @@ socket.on('start-wave', (data) => {
     bgMusic.pause();
 
     const banner = new PIXI.Text(data.title, {
-        fontFamily: 'Cinzel, serif',
-        fontSize: 60,
-        fill: 0xff0055,
-        dropShadow: true,
-        dropShadowColor: '#ff0055',
-        dropShadowBlur: 15
+        fontFamily: 'Cinzel, serif', fontSize: 60, fill: 0xff0055,
+        dropShadow: true, dropShadowColor: '#ff0055', dropShadowBlur: 15
     });
     banner.anchor.set(0.5);
     banner.x = app.screen.width / 2;
@@ -175,17 +167,12 @@ socket.on('new-chat', (data) => {
 socket.on('vip-entered', (data) => {
     eventMusic.play();
     bgMusic.pause();
-    
     sounds.vipEntry.play();
     app.renderer.backgroundColor = 0xffd700;
 
     const banner = new PIXI.Text(data.message, {
-        fontFamily: 'Cinzel, serif',
-        fontSize: 48,
-        fill: 0xff0055,
-        dropShadow: true,
-        dropShadowColor: '#ff0055',
-        dropShadowBlur: 12
+        fontFamily: 'Cinzel, serif', fontSize: 48, fill: 0xff0055,
+        dropShadow: true, dropShadowColor: '#ff0055', dropShadowBlur: 12
     });
     banner.anchor.set(0.5);
     banner.x = app.screen.width / 2;
@@ -215,7 +202,6 @@ socket.on('update-points', (amount) => {
     console.log(`حصلت على ${amount} نقطة!`);
 });
 
-// --- 8. تحديث الحجم ---
 window.addEventListener('resize', () => {
     app.renderer.resize(window.innerWidth, window.innerHeight);
 });
