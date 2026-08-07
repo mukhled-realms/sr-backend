@@ -1,32 +1,69 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
-const db = require('../db/index');
 const router = express.Router();
-require('dotenv').config();
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const db = require('../db');
 
-router.post('/login', (req, res) => {
-  const { username } = req.body;
-  if (!username) return res.status(400).json({ error: 'اسم المستخدم مطلوب' });
+const JWT_SECRET = process.env.JWT_SECRET || 'SKULLREALMSSECRET_KEY';
 
-  db.get(`SELECT * FROM users WHERE username = ?`, [username], (err, row) => {
-    if (err) return res.status(500).json({ error: 'DB Error' });
-    let userId, userData;
-    if (row) { userData = row; userId = row.id; } 
-    else {
-      userId = `user_${Date.now()}`;
-      db.run(`INSERT INTO users (id, username, diamonds, score) VALUES (?, ?, ?, ?)`, [userId, username, 0, 0]);
-      userData = { id: userId, username, diamonds: 0, score: 0 };
-    }
-    const token = jwt.sign({ id: userData.id, username: userData.username }, process.env.JWT_SECRET || 'skull_secret_key', { expiresIn: '7d' });
-    res.json({ token, user: userData });
-  });
+// تسجيل مستخدم جديد
+router.post('/register', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    if (!username || !password)
+      return res.status(400).json({ ok: false, error: 'Missing fields' });
+
+    const hashed = await bcrypt.hash(password, 10);
+    const userId = await db.createUser(username, hashed);
+
+    return res.status(201).json({ ok: true, userId });
+  } catch (err) {
+    console.error('Register Error:', err);
+    return res.status(500).json({ ok: false });
+  }
 });
 
-router.get('/me', require('../middleware/auth').authenticateToken, (req, res) => {
-  db.get(`SELECT id, username, diamonds, score FROM users WHERE id = ?`, [req.user.id], (err, row) => {
-    if (err) return res.status(500).json({ error: 'DB Error' });
-    res.json(row);
-  });
+// تسجيل الدخول
+router.post('/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+
+    const user = await db.getUserByUsername(username);
+    if (!user) return res.status(401).json({ ok: false, error: 'User not found' });
+
+    const match = await bcrypt.compare(password, user.password);
+    if (!match) return res.status(401).json({ ok: false, error: 'Wrong password' });
+
+    const token = jwt.sign(
+      { id: user.id, username: user.username, viplevel: user.vip_level },
+      JWT_SECRET,
+      { expiresIn: '7d' }
+    );
+
+    return res.status(200).json({ ok: true, token, userId: user.id, viplevel: user.vip_level });
+  } catch (err) {
+    console.error('Login Error:', err);
+    return res.status(500).json({ ok: false });
+  }
 });
 
-module.exports = router;
+// ميدل وير تحقق التوكن
+function authMiddleware(req, res, next) {
+  const header = req.headers.authorization;
+  if (!header) return res.status(401).json({ ok: false, error: 'No token' });
+
+  const token = header.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ ok: false, error: 'Invalid token' });
+  }
+}
+
+module.exports = {
+  router,
+  authMiddleware
+};
