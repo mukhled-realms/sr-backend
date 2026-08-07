@@ -27,9 +27,9 @@ app.use('/api/auth', authRoutes);
 const paymentRoutes = require('./routes/payment');
 app.use('/api/payment', paymentRoutes);
 
-// السوكيت
-const { initGameSocket } = require('./sockets/gameSocket');
-initGameSocket(io);
+// السوكيت (التصحيح النهائي للأسماء)
+const setupGameSocket = require('./sockets/gameSocket');
+setupGameSocket(io);
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Skull Realms running on port ${PORT}`));
