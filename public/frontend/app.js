@@ -1,25 +1,18 @@
-// --- إصلاح الشاشة السوداء ---
-document.body.style.backgroundColor = "#0a0a0c";
-document.body.offsetHeight;
+// --- 0. إصلاح الشاشة السوداء للموبايل ---
+const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 // --- موسيقى الخلفية ---
 const bgMusic = document.getElementById("bgMusic");
-bgMusic.volume = 0.25;
-bgMusic.play().catch(() => {
-    document.body.addEventListener("click", () => bgMusic.play(), { once: true });
-});
-
 const eventMusic = document.getElementById("eventMusic");
-eventMusic.volume = 0.35;
 
-// --- إعداد الصوتيات (Howler.js) ---
+// --- 1. إعداد الصوتيات (Howler.js) ---
 const sounds = {
     pickup: new Howl({ src: ['/assets/sounds/pickup.mp3'], volume: 0.5 }),
     vipEntry: new Howl({ src: ['/assets/sounds/vip-fanfare.mp3'], volume: 0.8 }),
     oracle: new Howl({ src: ['/assets/sounds/whisper.mp3'], volume: 0.4, rate: 0.8 })
 };
 
-// --- نظام الجزيئات ---
+// --- 2. نظام الجزيئات ---
 class ParticleSystem {
     constructor(container) {
         this.container = container;
@@ -54,36 +47,54 @@ class ParticleSystem {
     }
 }
 
-// --- الاتصال بالسيرفر ---
+// --- 3. الاتصال بالسيرفر (متوافق مع Render) ---
 const socket = io(window.location.origin);
 
-// --- إعداد PixiJS ---
+// --- 4. إعداد PixiJS (النسخة المتوافقة مع الموبايل) ---
 const app = new PIXI.Application({
     width: window.innerWidth,
     height: window.innerHeight,
     backgroundColor: 0x0a0a0c,
-    antialias: true
+    resolution: window.devicePixelRatio || 1,
+    autoDensity: true,
+    antialias: true,
+    resizeTo: window
 });
 document.getElementById('game-container').appendChild(app.view);
-app.renderer.backgroundColor = 0x0a0a0c;
+
+// --- 5. عناصر اللعبة الأساسية ---
+const mainStage = new PIXI.Container();
+app.stage.addChild(mainStage);
 
 const skullsContainer = new PIXI.Container();
-app.stage.addChild(skullsContainer);
+mainStage.addChild(skullsContainer);
 const skulls = {};
 
-const particles = new ParticleSystem(app.stage);
+const particles = new ParticleSystem(mainStage);
 app.ticker.add(() => particles.update());
 
-// --- رسم الجمجمة المتوهجة ---
+// --- 6. رسم الجمجمة المتوهجة (مع تخفيف الفلاتر للموبايل) ---
+function applyNeonGlow(graphic) {
+    if (isMobile) {
+        graphic.tint = 0x00f3ff;
+    } else {
+        const glow = new PIXI.filters.BlurFilter();
+        glow.blur = 10;
+        graphic.filters = [glow];
+    }
+}
+
 function createSkull(id, x, y) {
     const container = new PIXI.Container();
 
+    // التوهج
     const glow = new PIXI.Graphics();
     glow.beginFill(0x00f3ff, 0.3);
     glow.drawCircle(0, 0, 40);
     glow.endFill();
-    glow.filters = [new PIXI.filters.BlurFilter(12)];
+    applyNeonGlow(glow);
 
+    // الشكل الأساسي
     const graphic = new PIXI.Graphics();
     graphic.beginFill(0x00f3ff, 0.8);
     graphic.lineStyle(3, 0x00f3ff);
@@ -110,7 +121,7 @@ function createSkull(id, x, y) {
     skulls[id] = container;
 }
 
-// --- تأثير الكتابة ---
+// --- 7. تأثير الكتابة ---
 function typeWriterEffect(text, element) {
     element.innerHTML = '';
     let i = 0;
@@ -125,7 +136,7 @@ function typeWriterEffect(text, element) {
     type();
 }
 
-// --- الأحداث ---
+// --- 8. أحداث السوكيت ---
 socket.on('spawn-skull', (data) => createSkull(data.id, data.x, data.y));
 
 socket.on('remove-skull', (id) => {
@@ -146,10 +157,10 @@ socket.on('start-wave', (data) => {
     banner.anchor.set(0.5);
     banner.x = app.screen.width / 2;
     banner.y = app.screen.height / 2;
-    app.stage.addChild(banner);
+    mainStage.addChild(banner);
 
     setTimeout(() => {
-        app.stage.removeChild(banner);
+        mainStage.removeChild(banner);
         eventMusic.pause();
         eventMusic.currentTime = 0;
         bgMusic.play();
@@ -177,10 +188,10 @@ socket.on('vip-entered', (data) => {
     banner.anchor.set(0.5);
     banner.x = app.screen.width / 2;
     banner.y = 120;
-    app.stage.addChild(banner);
+    mainStage.addChild(banner);
 
     setTimeout(() => {
-        app.stage.removeChild(banner);
+        mainStage.removeChild(banner);
         app.renderer.backgroundColor = 0x0a0a0c;
         eventMusic.pause();
         eventMusic.currentTime = 0;
@@ -204,4 +215,18 @@ socket.on('update-points', (amount) => {
 
 window.addEventListener('resize', () => {
     app.renderer.resize(window.innerWidth, window.innerHeight);
+});
+
+// --- 9. حل مشكلة الموبايل (الضغطة الأولى) ---
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('overlay').style.display = 'none';
+    
+    // تفعيل الصوت للموبايل
+    if (Howler.ctx && Howler.ctx.state === 'suspended') {
+        Howler.ctx.resume();
+    }
+
+    // تشغيل موسيقى الخلفية بعد الضغط
+    bgMusic.volume = 0.25;
+    bgMusic.play();
 });
