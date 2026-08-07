@@ -49,8 +49,19 @@ function setUserVipLevel(userId, level) {
     });
 }
 
+// دالة جلب مستوى VIP (جديدة من كابلت)
+function getUserVipLevel(userId) {
+    return new Promise((resolve, reject) => {
+        db.get(`SELECT vip_level FROM users WHERE id = ?;`, [userId], (err, row) => {
+            if (err) return reject(err);
+            resolve(row ? row.vip_level : 0);
+        });
+    });
+}
+
 // تصدير الدوال
 module.exports = {
     updateUserPoints,
-    setUserVipLevel
+    setUserVipLevel,
+    getUserVipLevel // تم إضافة هذه الدالة
 };
