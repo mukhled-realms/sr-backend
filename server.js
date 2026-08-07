@@ -15,8 +15,9 @@ app.use(express.static('public'));
 const { router: authRoutes } = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
-const { initGameSocket } = require('./sockets/gameSocket');
-initGameSocket(io);
+// التعديل المهم هنا: لأننا نصدر دالة عادية، نستدعيها مباشرة ولا نفكها بـ { }
+const setupGameSocket = require('./sockets/gameSocket');
+setupGameSocket(io);
 
 server.listen(process.env.PORT || 3000, () =>
   console.log('Skull Realms Server running')
