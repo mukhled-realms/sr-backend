@@ -2,1145 +2,793 @@
 <html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Skull Realms - العالم الحقيقي يبدأ من هنا</title>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="pageTitle">SKULL REALMS - Imperial Epic Edition</title>
+    <!-- استدعاء محرك PixiJS للجسيمات -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/7.3.2/pixi.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;800;900&display=swap');
+
         :root {
-            --bg-dark: #0d0d1a;
-            --bg-card: #16162a;
-            --bg-card-light: #1e1e3a;
-            --primary: #ff00aa;
-            --secondary: #aa00ff;
-            --gold: #ffd700;
-            --orange: #ff9500;
-            --cyan: #00d4ff;
-            --text: #ffffff;
-            --text-muted: #a0a0c0;
-            --success: #00ff88;
+            --bg-deep: #030107;
+            --panel-bg: rgba(12, 6, 22, 0.85);
+            --border-neon: rgba(255, 0, 127, 0.3);
+            --accent-pink: #ff007f;
+            --accent-cyan: #00ffff;
+            --accent-gold: #ffcc00;
+            --text-main: #ffffff;
+            --text-muted: #9b95b0;
         }
 
         * {
+            box-sizing: border-box;
             margin: 0;
             padding: 0;
-            box-sizing: border-box;
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Cairo', sans-serif;
             -webkit-tap-highlight-color: transparent;
+            user-select: none;
+            outline: none;
         }
 
         body {
-            background: var(--bg-dark);
-            color: var(--text);
+            background-color: var(--bg-deep);
+            color: var(--text-main);
             min-height: 100vh;
-            overflow-x: hidden;
-            position: relative;
-        }
-
-        /* Animated background particles */
-        .bg-particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 0;
-            overflow: hidden;
-        }
-
-        .particle {
-            position: absolute;
-            width: 4px;
-            height: 4px;
-            background: var(--primary);
-            border-radius: 50%;
-            opacity: 0.3;
-            animation: float 15s infinite;
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
-            10% { opacity: 0.3; }
-            90% { opacity: 0.3; }
-            100% { transform: translateY(-10vh) rotate(720deg); opacity: 0; }
-        }
-
-        /* Page container */
-        .page {
-            display: none;
-            min-height: 100vh;
-            padding: 20px;
-            position: relative;
-            z-index: 1;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .page.active {
             display: flex;
             flex-direction: column;
             align-items: center;
+            overflow-x: hidden;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+        @keyframes skullShake {
+            0% { transform: scale(1) translate(0, 0); }
+            25% { transform: scale(0.90) translate(-4px, 4px); }
+            50% { transform: scale(0.90) translate(4px, -4px); }
+            75% { transform: scale(0.90) translate(-2px, -2px); }
+            100% { transform: scale(1) translate(0, 0); }
         }
 
-        /* ========== HOME PAGE ========== */
-        .home-card {
-            background: linear-gradient(145deg, var(--bg-card), #0f0f20);
-            border: 2px solid var(--gold);
-            border-radius: 24px;
-            padding: 40px 24px;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            box-shadow: 0 0 40px rgba(255, 215, 0, 0.15), inset 0 0 60px rgba(255, 215, 0, 0.03);
-            margin-top: 40px;
+        .skull-circle.shaking {
+            animation: skullShake 0.12s ease-in-out;
+        }
+
+        body.fever-active {
+            box-shadow: inset 0 0 90px rgba(255, 51, 0, 0.8), 0 0 50px rgba(255, 204, 0, 0.5);
+        }
+
+        #pixi-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        header, .stats-container, .fever-wrapper, .clicker-section, .main-counter, .panels-container {
             position: relative;
+            z-index: 2;
+        }
+
+        header {
+            width: 100%;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(8, 4, 15, 0.95);
+            border-bottom: 1px solid var(--border-neon);
+            backdrop-filter: blur(12px);
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-area h1 {
+            font-size: 1.25rem;
+            font-weight: 900;
+            background: linear-gradient(45deg, var(--accent-pink), #b833ff, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .lang-select {
+            background: rgba(20, 10, 35, 0.9);
+            color: var(--accent-cyan);
+            border: 1px solid rgba(0, 255, 255, 0.4);
+            padding: 5px 10px;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #7b2cbf, var(--accent-pink));
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 12px;
+            font-weight: 800;
+            font-size: 0.8rem;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 0 0 15px rgba(255,0,127,0.4);
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px;
+            width: 92%;
+            max-width: 520px;
+            margin: 15px 0 10px 0;
+        }
+
+        .stat-box {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-neon);
+            border-radius: 12px;
+            padding: 8px 4px;
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .stat-box .val {
+            font-size: 1.05rem;
+            font-weight: 900;
+            color: var(--accent-pink);
+        }
+
+        .stat-box .lbl {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .fever-wrapper {
+            width: 85%;
+            max-width: 420px;
+            margin: 5px 0 12px 0;
+        }
+
+        .fever-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--accent-gold);
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .fever-bar {
+            width: 100%;
+            height: 7px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 4px;
             overflow: hidden;
+            border: 1px solid rgba(255,204,0,0.3);
         }
 
-        .home-card::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(255,215,0,0.03) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
+        .fever-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff3300, #ffcc00, #ff007f);
+            transition: width 0.2s ease;
         }
 
-        @keyframes rotate {
+        .clicker-section {
+            position: relative;
+            margin: 15px 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .outer-ring {
+            width: 230px;
+            height: 230px;
+            border-radius: 50%;
+            border: 2px dashed rgba(0, 255, 255, 0.25);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: rotateRing 30s linear infinite;
+        }
+
+        @keyframes rotateRing {
             from { transform: rotate(0deg); }
             to { transform: rotate(360deg); }
         }
 
-        .crown-icon {
-            font-size: 80px;
-            margin-bottom: 16px;
-            filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.5));
-            animation: crownPulse 2s ease-in-out infinite;
-            position: relative;
-            z-index: 1;
-        }
-
-        @keyframes crownPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.08); }
-        }
-
-        .home-title {
-            font-size: 36px;
-            font-weight: 900;
-            color: var(--gold);
-            margin-bottom: 8px;
-            position: relative;
-            z-index: 1;
-            text-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
-        }
-
-        .home-subtitle {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 32px;
-            line-height: 1.6;
-            position: relative;
-            z-index: 1;
-        }
-
-        .home-subtitle .tagline {
-            display: block;
-            margin-top: 8px;
-            color: var(--cyan);
-            font-weight: 700;
-            font-size: 13px;
-            letter-spacing: 1px;
-        }
-
-        .btn {
-            display: block;
-            width: 100%;
-            padding: 16px 24px;
-            border: none;
-            border-radius: 16px;
-            font-size: 17px;
-            font-weight: 700;
-            cursor: pointer;
-            margin-bottom: 14px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .btn::after {
-            content: '';
+        .skull-circle {
             position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-            transition: left 0.5s;
-        }
-
-        .btn:hover::after {
-            left: 100%;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 4px 20px rgba(255, 0, 170, 0.4);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(255, 0, 170, 0.6);
-        }
-
-        .btn-gold {
-            background: linear-gradient(135deg, var(--gold), var(--orange));
-            color: #1a1a00;
-            box-shadow: 0 4px 20px rgba(255, 215, 0, 0.4);
-        }
-
-        .btn-gold:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 30px rgba(255, 215, 0, 0.6);
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 2px solid var(--primary);
-            color: var(--text);
-        }
-
-        .btn-outline:hover {
-            background: rgba(255, 0, 170, 0.1);
-            transform: translateY(-2px);
-        }
-
-        .home-footer {
-            margin-top: 20px;
-            font-size: 13px;
-            color: var(--cyan);
-            cursor: pointer;
-            position: relative;
-            z-index: 1;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .home-footer:hover {
-            text-decoration: underline;
-        }
-
-        /* ========== SKULL PAGE ========== */
-        .skull-header {
-            width: 100%;
-            max-width: 420px;
+            width: 175px;
+            height: 175px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #3b002c 0%, #0a0212 90%);
+            border: 3px solid var(--accent-pink);
+            box-shadow: 0 0 35px rgba(255, 0, 127, 0.4), inset 0 0 20px rgba(255, 0, 127, 0.2);
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-            padding-top: 10px;
-        }
-
-        .stars-badge {
-            background: linear-gradient(135deg, #2a1a00, #1a1000);
-            border: 1px solid var(--gold);
-            border-radius: 12px;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 18px;
-            font-weight: 800;
-            color: var(--gold);
-            box-shadow: 0 0 15px rgba(255, 215, 0, 0.2);
-        }
-
-        .page-title {
-            font-size: 24px;
-            font-weight: 900;
-            color: var(--gold);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.3);
-        }
-
-        .back-btn {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
-            background: var(--bg-card);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: var(--text);
-            display: flex;
-            align-items: center;
             justify-content: center;
+            align-items: center;
             cursor: pointer;
-            font-size: 18px;
-        }
-
-        .skull-card {
-            background: linear-gradient(145deg, var(--bg-card), #0f0f20);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
-            padding: 40px 24px;
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .skull-container {
-            position: relative;
-            display: inline-block;
-            margin-bottom: 24px;
-            padding: 20px;
+            z-index: 10;
         }
 
         .skull-icon {
-            font-size: 100px;
-            filter: drop-shadow(0 0 30px rgba(255, 0, 170, 0.4));
-            position: relative;
-            z-index: 2;
-            animation: skullFloat 3s ease-in-out infinite;
-        }
-
-        @keyframes skullFloat {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        /* Fire glow effect */
-        .fire-glow {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 160px;
-            height: 160px;
-            border-radius: 50%;
-            background: radial-gradient(circle, 
-                rgba(255, 100, 0, 0.8) 0%, 
-                rgba(255, 50, 0, 0.5) 30%, 
-                rgba(255, 0, 0, 0.2) 60%, 
-                transparent 70%);
-            opacity: 0;
-            z-index: 1;
+            font-size: 4rem;
             pointer-events: none;
         }
 
-        .fire-glow.active {
-            animation: fireBurst 3s ease-out forwards;
+        .main-counter {
+            font-size: 2.8rem;
+            font-weight: 900;
+            background: linear-gradient(180deg, #ffffff, #ffa3d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
         }
 
-        @keyframes fireBurst {
-            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
-            20% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
-            40% { opacity: 0.9; transform: translate(-50%, -50%) scale(1); }
-            60% { opacity: 0.7; transform: translate(-50%, -50%) scale(1.1); }
-            80% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
-            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
-        }
-
-        .fire-particles {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 200px;
-            height: 200px;
-            pointer-events: none;
-            z-index: 1;
-        }
-
-        .fire-particle {
-            position: absolute;
-            width: 6px;
-            height: 6px;
-            background: var(--orange);
-            border-radius: 50%;
-            opacity: 0;
-        }
-
-        .fire-particles.active .fire-particle {
-            animation: fireParticle 3s ease-out forwards;
-        }
-
-        @keyframes fireParticle {
-            0% { opacity: 0; transform: translate(0, 0) scale(0); }
-            20% { opacity: 1; }
-            100% { opacity: 0; transform: translate(var(--tx), var(--ty)) scale(0); }
-        }
-
-        /* Level labels */
-        .skull-name {
-            font-size: 22px;
-            font-weight: 800;
-            margin-bottom: 8px;
-        }
-
-        .level-title {
-            font-size: 16px;
-            color: var(--cyan);
-            margin-bottom: 16px;
-            font-weight: 700;
-        }
-
-        .progress-container {
-            margin-bottom: 8px;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 12px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 6px;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--secondary));
-            border-radius: 6px;
-            transition: width 0.8s ease;
-            box-shadow: 0 0 10px rgba(255, 0, 170, 0.5);
-        }
-
-        .progress-text {
-            font-size: 15px;
-            color: var(--text-muted);
-            font-weight: 600;
-        }
-
-        .progress-text span {
-            color: var(--gold);
-            font-weight: 800;
-        }
-
-        .btn-ai {
-            margin-top: 24px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            color: white;
-            box-shadow: 0 4px 20px rgba(255, 0, 170, 0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
-
-        /* ========== CHAT PAGE ========== */
-        .chat-header {
-            width: 100%;
-            max-width: 420px;
-            background: linear-gradient(135deg, rgba(255,0,170,0.15), rgba(170,0,255,0.15));
-            border: 1px solid rgba(255, 0, 170, 0.2);
-            border-radius: 20px;
-            padding: 16px 20px;
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            margin-bottom: 16px;
-            margin-top: 10px;
-        }
-
-        .ai-avatar {
-            width: 50px;
-            height: 50px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            box-shadow: 0 0 20px rgba(255, 0, 170, 0.3);
-        }
-
-        .ai-info h2 {
-            font-size: 20px;
-            font-weight: 800;
-            color: var(--primary);
-        }
-
-        .ai-info p {
-            font-size: 12px;
-            color: var(--text-muted);
-        }
-
-        .chat-messages {
-            width: 100%;
-            max-width: 420px;
-            flex: 1;
-            overflow-y: auto;
-            padding-bottom: 16px;
+        .panels-container {
+            width: 90%;
+            max-width: 480px;
             display: flex;
             flex-direction: column;
             gap: 12px;
+            margin-bottom: 50px;
         }
 
-        .message {
-            max-width: 85%;
-            padding: 14px 18px;
-            border-radius: 20px;
-            font-size: 14px;
-            line-height: 1.7;
-            animation: messageIn 0.3s ease;
-        }
-
-        @keyframes messageIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .message.ai {
-            align-self: flex-start;
-            background: var(--bg-card);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-bottom-left-radius: 4px;
-        }
-
-        .message.user {
-            align-self: flex-end;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border-bottom-right-radius: 4px;
-        }
-
-        .message-header {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 6px;
-        }
-
-        .message-header strong {
-            color: var(--primary);
-            font-size: 13px;
-        }
-
-        .message.ai .message-icon {
-            font-size: 16px;
-        }
-
-        .chat-input-container {
-            width: 100%;
-            max-width: 420px;
-            display: flex;
-            gap: 10px;
-            padding: 12px;
-            background: var(--bg-card);
-            border-radius: 20px;
-            border: 1px solid rgba(255, 255, 255, 0.08);
-        }
-
-        .chat-input {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--text);
-            font-size: 15px;
-            padding: 8px 12px;
-            outline: none;
-        }
-
-        .chat-input::placeholder {
-            color: var(--text-muted);
-        }
-
-        .send-btn {
-            width: 44px;
-            height: 44px;
+        .panel-card {
+            background: var(--panel-bg);
+            border: 1px solid rgba(123, 44, 191, 0.4);
             border-radius: 14px;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            color: white;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 0 15px rgba(255, 0, 170, 0.3);
-            transition: transform 0.2s;
+            padding: 14px;
+            backdrop-filter: blur(10px);
         }
 
-        .send-btn:hover {
-            transform: scale(1.05);
+        .panel-card h3 {
+            font-size: 0.95rem;
+            color: var(--accent-cyan);
+            margin-bottom: 10px;
+            border-bottom: 1px solid rgba(0, 255, 255, 0.2);
+            padding-bottom: 5px;
         }
 
-        /* ========== WELCOME GIFT MODAL ========== */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(8px);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal-overlay.active {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .modal-card {
-            background: linear-gradient(145deg, var(--bg-card), #0f0f20);
-            border: 2px solid var(--gold);
-            border-radius: 24px;
-            padding: 40px 28px;
-            text-align: center;
-            max-width: 360px;
-            width: 100%;
-            box-shadow: 0 0 60px rgba(255, 215, 0, 0.2);
-            animation: modalPop 0.5s ease;
-        }
-
-        @keyframes modalPop {
-            0% { transform: scale(0.5); opacity: 0; }
-            60% { transform: scale(1.05); }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-        .gift-icon {
-            font-size: 60px;
-            margin-bottom: 16px;
-            animation: giftBounce 1s ease infinite;
-        }
-
-        @keyframes giftBounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .modal-title {
-            font-size: 22px;
-            font-weight: 900;
-            color: var(--gold);
-            margin-bottom: 12px;
-        }
-
-        .modal-text {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-bottom: 24px;
-            line-height: 1.7;
-        }
-
-        .points-added {
-            font-size: 36px;
-            font-weight: 900;
-            color: var(--success);
-            margin: 16px 0;
-            text-shadow: 0 0 20px rgba(0, 255, 136, 0.4);
-        }
-
-        /* TikTok transition overlay */
-        .tiktok-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.95);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .tiktok-overlay.active {
-            display: flex;
-            animation: fadeIn 0.3s ease;
-        }
-
-        .tiktok-icon {
-            font-size: 80px;
-            animation: tiktokPulse 1s ease infinite;
-        }
-
-        @keyframes tiktokPulse {
-            0%, 100% { transform: scale(1); opacity: 1; }
-            50% { transform: scale(1.1); opacity: 0.8; }
-        }
-
-        .tiktok-text {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text);
-        }
-
-        .tiktok-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255,255,255,0.1);
-            border-top-color: var(--primary);
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar {
-            width: 4px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(255,255,255,0.1);
-            border-radius: 2px;
-        }
-
-        /* Confetti */
-        .confetti {
-            position: fixed;
-            width: 10px;
-            height: 10px;
-            pointer-events: none;
-            z-index: 999;
-        }
-
-        /* Streamer Link Button (New from Gemini) */
-        .streamer-btn-container {
-            margin-top: 14px;
-            display: flex;
-            justify-content: center;
-        }
-        .btn-streamer-link {
-            background: rgba(0, 212, 255, 0.15);
-            border: 1px solid var(--cyan);
-            color: var(--cyan);
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-weight: 700;
-            font-size: 13px;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
             gap: 8px;
-            transition: all 0.3s;
         }
-        .btn-streamer-link:hover {
-            background: var(--cyan);
+
+        .skill-node {
+            background: rgba(20, 10, 35, 0.7);
+            border: 1px solid rgba(255, 0, 127, 0.25);
+            border-radius: 10px;
+            padding: 8px 4px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        .skill-node.unlocked {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 255, 255, 0.1);
+        }
+
+        .skill-node .icon { font-size: 1.2rem; }
+        .skill-node .title { font-size: 0.68rem; font-weight: 800; margin-top: 3px; }
+        .skill-node .cost { font-size: 0.6rem; color: #ff99cc; margin-top: 2px; }
+
+        .prestige-box {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prestige-info p {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .prestige-btn {
+            background: linear-gradient(135deg, #ff3300, var(--accent-gold));
             color: #000;
-            transform: scale(1.05);
+            font-weight: 900;
+            border: none;
+            padding: 8px 14px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+
+        .guide-chat-box {
+            background: rgba(5, 2, 10, 0.7);
+            border-radius: 10px;
+            padding: 10px;
+            height: 90px;
+            overflow-y: auto;
+            font-size: 0.72rem;
+            color: #ddd;
+            margin-bottom: 8px;
+            border: 1px solid rgba(123, 44, 191, 0.3);
+        }
+
+        .guide-input-area {
+            display: flex;
+            gap: 6px;
+        }
+
+        .guide-input {
+            flex: 1;
+            background: rgba(15, 8, 25, 0.9);
+            border: 1px solid rgba(255, 0, 127, 0.3);
+            border-radius: 8px;
+            padding: 6px 10px;
+            color: white;
+            font-size: 0.72rem;
+        }
+
+        .guide-send {
+            background: var(--accent-cyan);
+            color: #000;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 800;
+            cursor: pointer;
+            font-size: 0.72rem;
+        }
+
+        .support-links-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .support-btn-vip {
+            background: linear-gradient(135deg, var(--accent-pink), #7b2cbf);
+            color: #fff;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            box-shadow: 0 0 12px rgba(255,0,127,0.4);
+        }
+
+        .support-btn-fast {
+            background: linear-gradient(135deg, #00b4d8, var(--accent-cyan));
+            color: #000;
+            border: none;
+            padding: 8px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            display: block;
+            box-shadow: 0 0 12px rgba(0,255,255,0.4);
+        }
+
+        .floating-number {
+            position: absolute;
+            font-weight: 900;
+            font-size: 1.4rem;
+            color: var(--accent-cyan);
+            text-shadow: 0 0 10px var(--accent-pink);
+            pointer-events: none;
+            animation: floatUp 0.6s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
         }
     </style>
 </head>
-<body>
-    <!-- Background particles -->
-    <div class="bg-particles" id="particles"></div>
+<body dir="rtl">
 
-    <!-- ========== HOME PAGE ========== -->
-    <div class="page active" id="page-home">
-        <div class="home-card">
-            <div class="crown-icon">👑</div>
-            <h1 class="home-title">الكنز هنا</h1>
-            <p class="home-subtitle">
-                تعال، اربح، واستقبل الهدايا. ابدأ رحلتك الآن.
-                <span class="tagline">العالم الحقيقي يبدأ من هنا</span>
-            </p>
+    <div id="pixi-container"></div>
 
-            <button class="btn btn-primary" onclick="goToSkull()">
-                🎮 ابدأ اللعبة (Skull Realms)
-            </button>
+    <header>
+        <div class="logo-area">
+            <span>💀</span>
+            <h1 id="logoText">SKULL REALMS</h1>
+        </div>
+        <div class="header-controls">
+            <select class="lang-select" id="langSelect" onchange="changeLanguage(this.value)">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="es">Español</option>
+                <option value="de">Deutsch</option>
+                <option value="it">Italiano</option>
+                <option value="pt">Português</option>
+                <option value="ru">Русский</option>
+                <option value="tr">Türkçe</option>
+                <option value="ja">日本語</option>
+                <option value="ko">한국어</option>
+                <option value="zh">中文</option>
+                <option value="hi">हिन्दी</option>
+                <option value="pl">Polski</option>
+                <option value="nl">Nederlands</option>
+                <option value="sv">Svenska</option>
+                <option value="id">Bahasa Indonesia</option>
+                <option value="vi">Tiếng Việt</option>
+            </select>
+            <a href="https://www.paypal.com/ncp/payment/S9W5TL33JLHPU" target="_blank" class="action-btn" id="vipBtnText">💎 VIP</a>
+        </div>
+    </header>
 
-            <button class="btn btn-gold" onclick="supportDev()">
-                💎 ادعم المطور (2000 ريال)
-            </button>
-
-            <button class="btn btn-outline" onclick="goToTikTok()">
-                📱 تابعنا على تيك توك
-            </button>
-
-            <div class="streamer-btn-container">
-                <button class="btn-streamer-link" onclick="copyStreamerLink()">
-                    📡 رابط البث السريع
-                </button>
-            </div>
-
-            <a class="home-footer" onclick="shareGame()">
-                🔗 اشترك في البث المباشر · انشر اللعبة لأصدقائك
-            </a>
+    <div class="stats-container">
+        <div class="stat-box">
+            <div class="val" id="clickCount">0</div>
+            <div class="lbl" id="lblClicks">النقرات</div>
+        </div>
+        <div class="stat-box">
+            <div class="val" id="clickPowerVal">1x</div>
+            <div class="lbl" id="lblPower">القوة</div>
+        </div>
+        <div class="stat-box">
+            <div class="val" id="darkShardsVal">0</div>
+            <div class="lbl" id="lblShards">الشظايا</div>
+        </div>
+        <div class="stat-box">
+            <div class="val" id="prestigeMultiplierVal">1.0x</div>
+            <div class="lbl" id="lblMult">المضاعف</div>
         </div>
     </div>
 
-    <!-- ========== SKULL PAGE ========== -->
-    <div class="page" id="page-skull">
-        <div class="skull-header">
-            <div class="stars-badge">
-                <span id="stars-count">0</span>
-                <span>⭐</span>
-            </div>
-            <h1 class="page-title">Skull Realms</h1>
-            <button class="back-btn" onclick="goToHome()">←</button>
+    <div class="fever-wrapper">
+        <div class="fever-info">
+            <span id="lblFever">🔥 مقياس الحمى والاحتراق</span>
+            <span id="feverPercent">0%</span>
         </div>
+        <div class="fever-bar">
+            <div class="fever-fill" id="feverFill"></div>
+        </div>
+    </div>
 
-        <div class="skull-card">
-            <div class="skull-container">
-                <div class="fire-glow" id="fireGlow"></div>
-                <div class="fire-particles" id="fireParticles">
-                    <div class="fire-particle" style="--tx: 40px; --ty: -60px; animation-delay: 0s;"></div>
-                    <div class="fire-particle" style="--tx: -50px; --ty: -40px; animation-delay: 0.2s;"></div>
-                    <div class="fire-particle" style="--tx: 30px; --ty: -80px; animation-delay: 0.4s;"></div>
-                    <div class="fire-particle" style="--tx: -30px; --ty: -70px; animation-delay: 0.1s;"></div>
-                    <div class="fire-particle" style="--tx: 60px; --ty: -30px; animation-delay: 0.3s;"></div>
-                    <div class="fire-particle" style="--tx: -60px; --ty: -50px; animation-delay: 0.5s;"></div>
+    <div class="clicker-section" id="clickerArea">
+        <div class="outer-ring"></div>
+        <div class="skull-circle" id="skullBtn">
+            <div class="skull-icon">💀</div>
+        </div>
+    </div>
+
+    <div class="main-counter" id="mainScore">0</div>
+
+    <div class="panels-container">
+        <div class="panel-card">
+            <h3 id="lblSkillTree">🌳 شجرة المهارات الأبدية</h3>
+            <div class="skill-grid">
+                <div class="skill-node" id="skill1" onclick="buySkill(1, 100, 'clickPower', 1)">
+                    <div class="icon">⚡</div>
+                    <div class="title" id="s1Title">قبضة البرق</div>
+                    <div class="cost">100 💀</div>
                 </div>
-                <div class="skull-icon">💀</div>
-            </div>
-
-            <div id="levelTitle" class="level-title">مبتدئ الكنز</div>
-            <div class="skull-name">💀 جمجمة عادية</div>
-
-            <div class="progress-container">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                <div class="skill-node" id="skill2" onclick="buySkill(2, 500, 'feverBoost', 2)">
+                    <div class="icon">🔥</div>
+                    <div class="title" id="s2Title">احتراق تام</div>
+                    <div class="cost">500 💀</div>
                 </div>
-                <p class="progress-text">النقاط: <span id="points-current">0</span> / <span id="points-max">50</span></p>
-            </div>
-        </div>
-
-        <button class="btn btn-ai" onclick="goToChat()">
-            <span>🤖</span>
-            <span>المساعد الذكي</span>
-        </button>
-    </div>
-
-    <!-- ========== CHAT PAGE ========== -->
-    <div class="page" id="page-chat">
-        <div class="chat-header">
-            <div class="ai-avatar">🤖</div>
-            <div class="ai-info">
-                <h2>المساعد الذكي</h2>
-                <p>متصل الآن · يرد فوراً</p>
-            </div>
-        </div>
-
-        <div class="chat-messages" id="chatMessages">
-            <div class="message ai">
-                <div class="message-header">
-                    <span class="message-icon">🤖</span>
-                    <strong>المساعد الذكي</strong>
+                <div class="skill-node" id="skill3" onclick="buySkill(3, 2000, 'shardsGain', 1)">
+                    <div class="icon">🔮</div>
+                    <div class="title" id="s3Title">عين الأرواح</div>
+                    <div class="cost">2000 💀</div>
                 </div>
-                مرحباً في Skull Realms! اسألني عن: <br>🔹 شرح اللعبة<br>🔹 الربح والدعم<br>🔹 المستويات والنار
             </div>
         </div>
 
-        <div class="chat-input-container">
-            <input type="text" class="chat-input" id="chatInput" placeholder="اكتب سؤالك..." onkeypress="if(event.key==='Enter')sendMessage()">
-            <button class="send-btn" onclick="sendMessage()">✉️</button>
+        <div class="panel-card">
+            <h3 id="lblPrestige">🌌 معبد التناسخ (Prestige)</h3>
+            <div class="prestige-box">
+                <div class="prestige-info">
+                    <p id="pDesc">أعد ضبط العوالم لكسب شظايا الظلام والقوة الدائمة!</p>
+                    <p style="color: var(--accent-cyan); margin-top: 2px;"><span id="pPendingLbl">المكسب المتوقع:</span> <span id="pendingShards">0</span></p>
+                </div>
+                <button class="prestige-btn" onclick="triggerPrestige()" id="pBtnText">✨ تناسخ الآن</button>
+            </div>
         </div>
-    </div>
 
-    <!-- ========== WELCOME MODAL ========== -->
-    <div class="modal-overlay" id="welcomeModal">
-        <div class="modal-card">
-            <div class="gift-icon">🎁</div>
-            <h2 class="modal-title">أهلاً بك في الريلم!</h2>
-            <p class="modal-text">حصلت على 5 نقاط ترحيبية</p>
-            <div class="points-added">+5 ⭐</div>
-            <button class="btn btn-primary" onclick="closeWelcomeModal()">ممتاز!</button>
+        <div class="panel-card">
+            <h3 id="lblGuideTitle">🤖 المساعد الذكي (Realm Guide)</h3>
+            <div class="guide-chat-box" id="guideChatLog">
+                أهلاً بك في Skull Realms! أنا مرشدك العوالمي. اسألني عن طريقة اللعب أو الأكمبو والنار.
+            </div>
+            <div class="guide-input-area">
+                <input type="text" class="guide-input" id="guideInput" placeholder="اكتب سؤالك...">
+                <button class="guide-send" onclick="sendGuideMessage()" id="lblSend">إرسال</button>
+            </div>
+            <div class="support-links-grid">
+                <a href="https://www.paypal.com/ncp/payment/S9W5TL33JLHPU" target="_blank" class="support-btn-vip" id="supportVipText">💎 دعم VIP رئيسي</a>
+                <a href="https://paypal.me/MkledAnze900" target="_blank" class="support-btn-fast" id="supportFastText">⚡ دعم سريع مباشر</a>
+            </div>
         </div>
-    </div>
-
-    <!-- ========== TIKTOK TRANSITION ========== -->
-    <div class="tiktok-overlay" id="tiktokOverlay">
-        <div class="tiktok-icon">📱</div>
-        <p class="tiktok-text">سيتم نقلك إلى تيك توك الآن</p>
-        <div class="tiktok-spinner"></div>
     </div>
 
     <script>
-        // ========== STATE ==========
-        let state = {
-            points: 0,
-            hasVisited: false,
-            hasFired: false
+        const translations = {
+            ar: {
+                title: "SKULL REALMS - Imperial Epic Edition", vip: "💎 VIP",
+                clicks: "النقرات", power: "القوة", shards: "الشظايا", mult: "المضاعف",
+                fever: "🔥 مقياس الحمى والاحتراق", skillTree: "🌳 شجرة المهارات الأبدية",
+                s1: "قبضة البرق", s2: "احتراق تام", s3: "عين الأرواح",
+                prestige: "🌌 معبد التناسخ (Prestige)", pDesc: "أعد ضبط العوالم لكسب شظايا الظلام والقوة الدائمة!",
+                pPending: "المكسب المتوقع:", pBtn: "✨ تناسخ الآن",
+                guideTitle: "🤖 المساعد الذكي (Realm Guide)",
+                guideWelcome: "أهلاً بك في Skull Realms! أنا مرشدك العوالمي. اسألني عن طريقة اللعب أو الأكمبو والنار.",
+                guidePlaceholder: "اكتب سؤالك...", send: "إرسال",
+                supportVip: "💎 دعم VIP رئيسي", supportFast: "⚡ دعم سريع مباشر"
+            },
+            en: {
+                title: "SKULL REALMS - Imperial Epic Edition", vip: "💎 VIP",
+                clicks: "Clicks", power: "Power", shards: "Shards", mult: "Mult",
+                fever: "🔥 Fever & Burn Combo", skillTree: "🌳 Eternal Skill Tree",
+                s1: "Lightning Fist", s2: "Full Burn", s3: "Spirit Eye",
+                prestige: "🌌 Prestige Temple", pDesc: "Reset worlds to earn Dark Shards & eternal power!",
+                pPending: "Estimated Gain:", pBtn: "✨ Rebirth Now",
+                guideTitle: "🤖 Realm Guide",
+                guideWelcome: "Welcome to Skull Realms! I am your guide. Ask me about gameplay or fever combos.",
+                guidePlaceholder: "Type your question...", send: "Send",
+                supportVip: "💎 VIP Main Support", supportFast: "⚡ Fast Direct Support"
+            }
         };
 
-        // Level constants (Gemini's refined system)
-        const LEVELS = [
-            { name: 'مبتدئ الكنز', skullName: '💀 جمجمة عادية', max: 49, fire: false },
-            { name: 'محارب العوالم', skullName: '💀 جمجمة وردية', max: 149, fire: true },
-            { name: 'أسطورة الأساطير', skullName: '👑 جمجمة ملكية', max: Infinity, fire: true }
-        ];
-
-        function loadState() {
-            const saved = localStorage.getItem('skullRealmsState');
-            if (saved) {
-                state = JSON.parse(saved);
-            }
-            updateUI();
-        }
-
-        function saveState() {
-            localStorage.setItem('skullRealmsState', JSON.stringify(state));
-        }
-
-        // ========== NAVIGATION ==========
-        function showPage(pageId) {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId).classList.add('active');
-            window.scrollTo(0, 0);
-        }
-
-        function goToHome() { showPage('page-home'); }
-        function goToSkull() { 
-            showPage('page-skull'); 
-            checkFireTrigger();
-        }
-        function goToChat() { showPage('page-chat'); }
-
-        // ========== WELCOME GIFT ==========
-        function checkWelcomeGift() {
-            if (!state.hasVisited) {
-                state.hasVisited = true;
-                state.points += 5;
-                saveState();
-                updateUI();
-
-                setTimeout(() => {
-                    document.getElementById('welcomeModal').classList.add('active');
-                    createConfetti();
-                }, 800);
+        function changeLanguage(lang) {
+            const t = translations[lang] || translations['en'];
+            document.documentElement.lang = lang;
+            document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+            if(t && t.title) {
+                document.getElementById('pageTitle').innerText = t.title;
+                document.getElementById('vipBtnText').innerText = t.vip;
+                document.getElementById('lblClicks').innerText = t.clicks;
+                document.getElementById('lblPower').innerText = t.power;
+                document.getElementById('lblShards').innerText = t.shards;
+                document.getElementById('lblMult').innerText = t.mult;
+                document.getElementById('lblFever').innerText = t.fever;
+                document.getElementById('lblSkillTree').innerText = t.skillTree;
+                document.getElementById('s1Title').innerText = t.s1;
+                document.getElementById('s2Title').innerText = t.s2;
+                document.getElementById('s3Title').innerText = t.s3;
+                document.getElementById('lblPrestige').innerText = t.prestige;
+                document.getElementById('pDesc').innerText = t.pDesc;
+                document.getElementById('pPendingLbl').innerText = t.pPending;
+                document.getElementById('pBtnText').innerText = t.pBtn;
+                document.getElementById('lblGuideTitle').innerText = t.guideTitle;
+                document.getElementById('guideChatLog').innerText = t.guideWelcome;
+                document.getElementById('guideInput').placeholder = t.guidePlaceholder;
+                document.getElementById('lblSend').innerText = t.send;
+                document.getElementById('supportVipText').innerText = t.supportVip;
+                document.getElementById('supportFastText').innerText = t.supportFast;
             }
         }
 
-        function closeWelcomeModal() {
-            document.getElementById('welcomeModal').classList.remove('active');
-        }
-
-        // ========== CONFETTI ==========
-        function createConfetti() {
-            const colors = ['#ff00aa', '#aa00ff', '#ffd700', '#00ff88', '#00d4ff'];
-            for (let i = 0; i < 50; i++) {
-                const confetti = document.createElement('div');
-                confetti.className = 'confetti';
-                confetti.style.left = Math.random() * 100 + 'vw';
-                confetti.style.top = '-10px';
-                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
-                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-                confetti.style.width = Math.random() * 8 + 4 + 'px';
-                confetti.style.height = Math.random() * 8 + 4 + 'px';
-                confetti.style.animation = `fall ${Math.random() * 2 + 2}s linear forwards`;
-                document.body.appendChild(confetti);
-
-                setTimeout(() => confetti.remove(), 4000);
-            }
-        }
-
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes fall {
-                to { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // ========== FIRE GLOW EFFECT ==========
-        function checkFireTrigger() {
-            const currentLevel = getCurrentLevel(state.points);
-            if (currentLevel.fire && !state.hasFired) {
-                state.hasFired = true;
-                saveState();
-                triggerFireGlow();
-            }
-        }
-
-        function getCurrentLevel(points) {
-            if (points <= LEVELS[0].max) return LEVELS[0];
-            if (points <= LEVELS[1].max) return LEVELS[1];
-            return LEVELS[2];
-        }
-
-        function getPointsToNextLevel(points) {
-            const current = getCurrentLevel(points);
-            if (current.name === 'أسطورة الأساطير') return 0;
-            const nextMax = LEVELS[LEVELS.indexOf(current) + 1]?.max || Infinity;
-            return nextMax - points;
-        }
-
-        function triggerFireGlow() {
-            const glow = document.getElementById('fireGlow');
-            const particles = document.getElementById('fireParticles');
-
-            glow.classList.add('active');
-            particles.classList.add('active');
-
-            setTimeout(() => {
-                glow.classList.remove('active');
-                particles.classList.remove('active');
-            }, 3000);
-        }
-
-        // ========== TIKTOK ==========
-        function goToTikTok() {
-            const overlay = document.getElementById('tiktokOverlay');
-            overlay.classList.add('active');
-
-            setTimeout(() => {
-                window.open('https://tiktok.com', '_blank');
-                overlay.classList.remove('active');
-            }, 2000);
-        }
-
-        // ========== SUPPORT DEV ==========
-        function supportDev() {
-            alert('شكراً لدعمك! 💎\nسيتم توجيهك لصفحة الدفع.');
-        }
-
-        // ========== SHARE ==========
-        function shareGame() {
-            const shareData = {
-                title: 'Skull Realms',
-                text: 'انضم إلي في Skull Realms! 🎮👑',
-                url: window.location.href
-            };
-
-            if (navigator.share) {
-                navigator.share(shareData);
-            } else {
-                const text = `انضم إلي في Skull Realms! 🎮👑\n${window.location.href}`;
-                navigator.clipboard.writeText(text).then(() => {
-                    alert('تم نسخ رابط المشاركة! 📋');
-                });
-            }
-        }
-
-        // ========== STREAMER LINK ==========
-        function copyStreamerLink() {
-            const url = window.location.href;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('📡 تم نسخ رابط البث! انسخه وضعه في وصف فيديوهاتك.');
-            });
-        }
-
-        // ========== CHAT ==========
-        const aiResponses = {
-            'شرح': 'Skull Realms هي مغامرة سريعة وحماسية لجني الكنوز! هدفك بسيط: انقر على الجمجمة بأسرع ما يمكنك لجمع النقاط، رفع مستواك، وفتح التأثيرات النارية الحصرية. ابدأ التحدي الآن واعتدِ لوحة الصدارة!',
-            'ربح': 'نظام الربح يعتمد على تفاعل اللاعبين ودعمهم المباشر لتطوير المنصة باستمرار. كل نقطة تجمعها تزيد من فرصك في المكافآت المستقبلية! ✨💰',
-            'دعم': 'يمكنك دعم المطور بـ 2000 ريال لفتح ميزات حصرية والحصول على شارة VIP ملكية في اللعبة. دعمك يُبني المستقبل! 👑💎',
-            'نار': 'عند وصولك لـ 50 نقطة، تصبح محارباً وتفعل هالة النار خلف الجمجمة! 🔥',
-            'نقاط': 'انقر على الجمجمة لجمع النقاط. المستويات: مبتدئ (0-49)، محارب (50-149)، أسطورة (150+).',
-            'مستوى': 'المستويات: مبتدئ الكنز → محارب العوالم → أسطورة الأساطير. كل مستوى يفتح تأثيرات جديدة!',
-            'default': 'مرحباً! اسألني عن: شرح، ربح، دعم، نقاط، نار، أو مستوى. 🤖'
-        };
-
-        function sendMessage() {
-            const input = document.getElementById('chatInput');
-            const text = input.value.trim();
-            if (!text) return;
-
-            addMessage(text, 'user');
-            input.value = '';
-
-            setTimeout(() => {
-                let response = aiResponses['default'];
-                for (const key in aiResponses) {
-                    if (text.includes(key)) {
-                        response = aiResponses[key];
-                        break;
-                    }
+        // تهيئة PixiJS
+        try {
+            const app = new PIXI.Application();
+            app.init({ backgroundAlpha: 0, resizeTo: window }).then(() => {
+                document.getElementById('pixi-container').appendChild(app.view);
+                const particles = [];
+                for (let i = 0; i < 35; i++) {
+                    const p = new PIXI.Graphics();
+                    p.beginFill(Math.random() > 0.5 ? 0xff007f : 0x00ffff, 0.4);
+                    p.drawCircle(0, 0, Math.random() * 2 + 1);
+                    p.endFill();
+                    p.x = Math.random() * window.innerWidth;
+                    p.y = Math.random() * window.innerHeight;
+                    p.vx = (Math.random() - 0.5) * 0.3;
+                    p.vy = -Math.random() * 1 - 0.2;
+                    app.stage.addChild(p);
+                    particles.push(p);
                 }
-                addMessage(response, 'ai');
-            }, 600);
+                app.ticker.add(() => {
+                    particles.forEach(p => {
+                        p.y += p.vy;
+                        p.x += p.vx;
+                        if (p.y < -10) {
+                            p.y = window.innerHeight + 10;
+                            p.x = Math.random() * window.innerWidth;
+                        }
+                    });
+                });
+            }).catch(e => console.log("Pixi load warning:", e));
+        } catch (err) {
+            console.log("Canvas fallback active");
         }
 
-        function addMessage(text, type) {
-            const container = document.getElementById('chatMessages');
-            const msg = document.createElement('div');
-            msg.className = `message ${type}`;
-
-            if (type === 'ai') {
-                msg.innerHTML = `
-                    <div class="message-header">
-                        <span class="message-icon">🤖</span>
-                        <strong>المساعد الذكي</strong>
-                    </div>
-                    ${text}
-                `;
-            } else {
-                msg.textContent = text;
+        const AudioEngine = {
+            ctx: null,
+            init() {
+                try {
+                    if (!this.ctx) this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    if (this.ctx.state === 'suspended') this.ctx.resume();
+                } catch(e) {}
+            },
+            playClick() {
+                this.init();
+                if (!this.ctx) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(320, t);
+                osc.frequency.exponentialRampToValueAtTime(800, t + 0.05);
+                gain.gain.setValueAtTime(0.1, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.05);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(t); osc.stop(t + 0.05);
+            },
+            playWin() {
+                this.init();
+                if (!this.ctx) return;
+                const t = this.ctx.currentTime;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(220, t);
+                osc.frequency.exponentialRampToValueAtTime(900, t + 0.3);
+                gain.gain.setValueAtTime(0.15, t);
+                gain.gain.exponentialRampToValueAtTime(0.01, t + 0.3);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(t); osc.stop(t + 0.3);
             }
-
-            container.appendChild(msg);
-            container.scrollTop = container.scrollHeight;
-        }
-
-        // ========== CLICK SKULL ==========
-        function clickSkull() {
-            state.points += 1;
-            saveState();
-            updateUI();
-
-            // Fire trigger on reaching level 1 threshold (50)
-            if (state.points === 50 && !state.hasFired) {
-                state.hasFired = true;
-                saveState();
-                triggerFireGlow();
-            }
-        }
-
-        // ========== UI UPDATE ==========
-        function updateUI() {
-            const current = getCurrentLevel(state.points);
-            const nextMax = current.name === 'أسطورة الأساطير' ? 0 : LEVELS[LEVELS.indexOf(current) + 1]?.max || 0;
-
-            document.getElementById('stars-count').textContent = state.points;
-            document.getElementById('points-current').textContent = state.points;
-            document.getElementById('points-max').textContent = nextMax || 'MAX';
-            document.getElementById('levelTitle').textContent = current.name;
-            document.querySelector('.skull-name').textContent = current.skullName;
-
-            // Update progress bar
-            if (nextMax > 0) {
-                const progress = (state.points / nextMax) * 100;
-                document.getElementById('progressFill').style.width = Math.min(progress, 100) + '%';
-            } else {
-                document.getElementById('progressFill').style.width = '100%';
-            }
-        }
-
-        // ========== PARTICLES ==========
-        function createParticles() {
-            const container = document.getElementById('particles');
-            for (let i = 0; i < 20; i++) {
-                const p = document.createElement('div');
-                p.className = 'particle';
-                p.style.left = Math.random() * 100 + '%';
-                p.style.animationDelay = Math.random() * 15 + 's';
-                p.style.animationDuration = (Math.random() * 10 + 10) + 's';
-                container.appendChild(p);
-            }
-        }
-
-        // ========== INIT ==========
-        window.onload = function() {
-            loadState();
-            createParticles();
-            checkWelcomeGift();
         };
 
-        // Expose clickSkull globally for inline onclick
-        window.clickSkull = clickSkull;
+        let score = 0;
+        let totalClicks = 0;
+        let clickPower = 1;
+        let darkShards = 0;
+        let prestigeMultiplier = 1.0;
+        let feverProgress = 0;
+        let isFeverActive = false;
+        const unlockedSkills = { 1: false, 2: false, 3: false };
+
+        const skullBtn = document.getElementById('skullBtn');
+        const mainScore = document.getElementById('mainScore');
+        const clickCountElem = document.getElementById('clickCount');
+        const clickPowerVal = document.getElementById('clickPowerVal');
+        const darkShardsVal = document.getElementById('darkShardsVal');
+        const prestigeMultiplierVal = document.getElementById('prestigeMultiplierVal');
+        const pendingShardsElem = document.getElementById('pendingShards');
+        const feverFill = document.getElementById('feverFill');
+        const feverPercent = document.getElementById('feverPercent');
+        const clickerArea = document.getElementById('clickerArea');
+
+        function handleSkullClick(e) {
+            e.stopPropagation();
+            AudioEngine.playClick();
+            
+            // اهتزاز الجمجمة فقط دون التأثير على الشاشة بالكامل لتفادي الاختفاء المؤقت
+            skullBtn.classList.add('shaking');
+            setTimeout(() => skullBtn.classList.remove('shaking'), 120);
+
+            let gain = clickPower * prestigeMultiplier;
+            if (isFeverActive) gain *= 4;
+
+            score += gain;
+            totalClicks += 1;
+            feverProgress += 6;
+
+            if (feverProgress >= 100 && !isFeverActive) triggerFever();
+            updateUI();
+            
+            let clientX = e.clientX || (e.touches && e.touches[0] ? e.touches[0].clientX : window.innerWidth/2);
+            let clientY = e.clientY || (e.touches && e.touches[0] ? e.touches[0].clientY : window.innerHeight/2);
+            showFloatingNumber(clientX, clientY, Math.floor(gain));
+        }
+
+        skullBtn.addEventListener('click', handleSkullClick);
+        skullBtn.addEventListener('touchstart', handleSkullClick, { passive: true });
+
+        function triggerFever() {
+            isFeverActive = true;
+            feverProgress = 100;
+            document.body.classList.add('fever-active');
+            AudioEngine.playWin();
+
+            let duration = 6;
+            let interval = setInterval(() => {
+                duration--;
+                feverPercent.innerText = `🔥 (${duration}s)`;
+                if (duration <= 0) {
+                    clearInterval(interval);
+                    isFeverActive = false;
+                    feverProgress = 0;
+                    document.body.classList.remove('fever-active');
+                }
+            }, 1000);
+        }
+
+        function buySkill(id, cost, type, value) {
+            if (score >= cost && !unlockedSkills[id]) {
+                score -= cost;
+                unlockedSkills[id] = true;
+                document.getElementById(`skill${id}`).classList.add('unlocked');
+                if (type === 'clickPower') clickPower += value;
+                if (type === 'feverBoost') prestigeMultiplier += 0.3;
+                if (type === 'shardsGain') darkShards += 5;
+                updateUI();
+                AudioEngine.playWin();
+            }
+        }
+
+        function triggerPrestige() {
+            let potential = Math.floor(score / 800);
+            if (potential < 1) return;
+            AudioEngine.playWin();
+            darkShards += potential;
+            prestigeMultiplier = 1 + (darkShards * 0.2);
+            score = 0;
+            feverProgress = 0;
+            clickPower = 1;
+            updateUI();
+            alert("✨ تم التناسخ بنجاح!");
+        }
+
+        function sendGuideMessage() {
+            const input = document.getElementById('guideInput');
+            const log = document.getElementById('guideChatLog');
+            const txt = input.value.trim();
+            if (!txt) return;
+            log.innerHTML += `<br><b>أنت:</b> ${txt}`;
+            input.value = "";
+            setTimeout(() => {
+                log.innerHTML += `<br><span style="color:var(--accent-cyan);"><b>مرشدك:</b> انقر بسرعة لملء مقياس الحمى وإشعال مضاعف الأكمبو!</span>`;
+                log.scrollTop = log.scrollHeight;
+            }, 400);
+        }
+
+        function showFloatingNumber(x, y, amount) {
+            const rect = clickerArea.getBoundingClientRect();
+            const el = document.createElement('div');
+            el.className = 'floating-number';
+            el.innerText = `+${amount}`;
+            el.style.left = `${x - rect.left}px`;
+            el.style.top = `${y - rect.top}px`;
+            clickerArea.appendChild(el);
+            setTimeout(() => el.remove(), 600);
+        }
+
+        function updateUI() {
+            mainScore.innerText = Math.floor(score).toLocaleString();
+            clickCountElem.innerText = totalClicks;
+            clickPowerVal.innerText = clickPower + 'x';
+            darkShardsVal.innerText = darkShards;
+            prestigeMultiplierVal.innerText = prestigeMultiplier.toFixed(1) + 'x';
+            pendingShardsElem.innerText = Math.floor(score / 800);
+
+            if (!isFeverActive) {
+                feverFill.style.width = feverProgress + '%';
+                feverPercent.innerText = feverProgress + '%';
+            }
+        }
+
+        setInterval(() => {
+            if (!isFeverActive && feverProgress > 0) {
+                feverProgress = Math.max(0, feverProgress - 2);
+                feverFill.style.width = feverProgress + '%';
+                feverPercent.innerText = feverProgress + '%';
+            }
+        }, 1000);
     </script>
 </body>
 </html>
